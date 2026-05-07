@@ -1,0 +1,16 @@
+# Optional: HA YAML dashboard that wraps the page as a sidebar entry.
+# Reference from configuration.yaml -> lovelace.dashboards (see ha-config.yaml).
+#
+# This is only needed if you want a clickable HA-side entry point in addition
+# to the kiosk URL.
+
+title: Jarvis
+views:
+  - title: Jarvis
+    path: main
+    type: panel
+    badges: []
+    cards:
+      - type: iframe
+        url: /local/jarvis/index.html
+        aspect_ratio: 100%

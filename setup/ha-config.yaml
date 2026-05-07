@@ -1,0 +1,135 @@
+# Home Assistant config snippets — merge into your configuration.yaml,
+# automations.yaml, etc. See docs/ha-setup.md for full context.
+
+# --- configuration.yaml ---
+
+input_select:
+  jarvis_card:
+    name: "Jarvis Active Card"
+    options:
+      - home
+      - weather
+      - commute
+      - listening
+      - ack
+      - grocery
+    initial: home
+    icon: mdi:robot
+
+input_text:
+  jarvis_last_speech:
+    name: "Jarvis Last Speech"
+    max: 255
+    initial: ""
+
+# Optional: register the page as a sidebar dashboard
+lovelace:
+  mode: storage
+  dashboards:
+    jarvis-card:
+      mode: yaml
+      title: Jarvis
+      icon: mdi:robot
+      show_in_sidebar: false
+      filename: dashboards/jarvis.yaml
+
+# Override built-in time intent so it says "It is 8:00 AM" instead of "8:00 AM"
+intent_script:
+  HassGetCurrentTime:
+    description: Time response with "It is" prefix
+    speech:
+      text: "It is {{ now().strftime('%-I:%M %p') }}."
+
+  RichWeather:
+    description: Current weather + flip to weather card
+    action:
+      - service: input_select.select_option
+        target:
+          entity_id: input_select.jarvis_card
+        data:
+          option: weather
+    speech:
+      text: "It's {{ states('weather.forecast_home') | replace('_', ' ') }} and {{ state_attr('weather.forecast_home','temperature') | round(0) }} degrees."
+
+
+# --- automations.yaml ---
+
+- id: jarvis_card_auto_reset
+  alias: Jarvis - Reset card to home after 30s
+  description: Auto-revert any non-home card to home after 30 seconds
+  triggers:
+    - trigger: state
+      entity_id: input_select.jarvis_card
+      to: ~
+      for:
+        seconds: 30
+  conditions:
+    - condition: template
+      value_template: "{{ trigger.to_state.state != 'home' }}"
+  actions:
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.jarvis_card
+      data:
+        option: home
+  mode: restart
+
+- id: jarvis_ack_global_fallback
+  alias: Jarvis - Ack any TTS response when no specific card is active
+  description: Catch-all — show spoken text on the ack card
+  triggers:
+    - trigger: event
+      event_type: call_service
+      event_data:
+        domain: tts
+  conditions:
+    - condition: state
+      entity_id: input_select.jarvis_card
+      state: home
+    - condition: template
+      value_template: "{{ trigger.event.data.service_data.message is defined and trigger.event.data.service_data.message | string | length > 0 }}"
+  actions:
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jarvis_last_speech
+      data:
+        value: "{{ trigger.event.data.service_data.message | string }}"
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.jarvis_card
+      data:
+        option: ack
+  mode: single
+
+- id: jarvis_ack_satellite_responding
+  alias: Jarvis - Show ack when satellite goes to responding
+  description: For wyoming satellites whose TTS doesn't go through the tts.* services
+  triggers:
+    - trigger: state
+      # Adjust the entity_id to your satellite
+      entity_id: assist_satellite.echo_show_office
+      to: responding
+  conditions:
+    - condition: state
+      entity_id: input_select.jarvis_card
+      state: home
+  actions:
+    - service: input_text.set_value
+      target:
+        entity_id: input_text.jarvis_last_speech
+      data:
+        value: "Jarvis is responding…"
+    - service: input_select.select_option
+      target:
+        entity_id: input_select.jarvis_card
+      data:
+        option: ack
+  mode: single
+
+# Optional: rest_command for grocery swipe-to-remove (touch variants only)
+rest_command:
+  groceries_remove_from_list:
+    url: "http://your-grocery-api:8520/remove_from_grocery_list"
+    method: POST
+    content_type: application/json
+    payload: '{"items": ["{{ item }}"]}'

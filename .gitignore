@@ -1,0 +1,12 @@
+# Local-only deployment artifacts
+*.local.html
+*.deployed
+HA_TOKEN
+.env
+
+# OS / editor noise
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
