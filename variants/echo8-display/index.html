@@ -1134,12 +1134,8 @@
   // ---------- mode + nav active pill ----------
   // URL overrides — read once at boot
   const urlParams = new URLSearchParams(location.search);
-  const HERE = urlParams.get("here");           // room id this device LIVES in
+  const HERE = urlParams.get("here");           // room id this device lives in (kept for future "you are here" hint)
   const URL_MODE = urlParams.get("mode");        // optional: lock mode to "voice"|"touch"|"both"
-  // Hide room-shortcut pills that point at the device's own room
-  if (HERE) {
-    document.querySelectorAll(`[data-here-id="${HERE}"]`).forEach(el => el.style.display = "none");
-  }
   function applyMode() {
     const mode = URL_MODE || state["input_select.jarvis_input_mode"]?.state || "both";
     document.body.dataset.mode = mode;
