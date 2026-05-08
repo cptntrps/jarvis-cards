@@ -376,6 +376,7 @@
     fill: transparent; stroke: var(--hairline); stroke-width: 1.2;
     cursor: pointer; transition: fill 600ms var(--ease), stroke 200ms var(--ease);
     vector-effect: non-scaling-stroke;
+    pointer-events: all;            /* register clicks on transparent fill */
   }
   #floorplan .fp-room.lit { fill: rgba(232, 168, 92, 0.32); stroke: rgba(232, 168, 92, 0.7); }
   #floorplan .fp-room.active { stroke: var(--ink); stroke-width: 2; }
@@ -967,10 +968,6 @@
       const m = state["binary_sensor.motion_"+sel.id].state === "on";
       stats.push({ k: "Activity", v: m ? "Now" : "Quiet", muted: !m });
     }
-    if (sel.id === "hallway" || sel.id === "living") {
-      const open = state["binary_sensor.door_front"]?.state === "on";
-      stats.push({ k: "Front Door", v: open ? "Open" : "Closed", muted: !open });
-    }
     $("fp-stats").innerHTML = stats.length
       ? stats.map(s => '<div class="fp-stat"><div class="k">'+s.k+'</div><div class="v'+(s.muted?' muted':'')+'">'+s.v+'</div></div>').join("")
       : '<div class="fp-empty">No sensors in this room.</div>';
@@ -1365,7 +1362,6 @@
     state["sensor.humidity_bath1"]    = { state: String(58 + ((faceIdx*9)%24)) };
     state["sensor.humidity_bath2"]    = { state: String(60 + ((faceIdx*11)%22)) };
     state["sensor.temp_kitchen"]  = { state: String(22 + ((faceIdx)%2)), attributes: { unit_of_measurement: "°C" } };
-    state["binary_sensor.door_front"] = { state: faceIdx % 5 === 3 ? "on" : "off" };
   }
 
   if (DEMO) {
