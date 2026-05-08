@@ -499,48 +499,59 @@
   /* ---------- PLANTS ---------- */
   #plants .p-stage {
     position: absolute; left: clamp(40px,5vw,72px); right: clamp(40px,5vw,72px);
-    top: clamp(120px,16vh,160px); bottom: clamp(80px,10vh,120px);
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px,2vw,28px);
+    top: clamp(110px,14vh,150px); bottom: clamp(80px,10vh,120px);
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px,2.5vw,36px);
   }
   #plants .p-card {
-    position: relative; padding: clamp(18px,2.2vh,26px) clamp(18px,2vw,24px);
-    border-top: 1px solid var(--ink); display: flex; flex-direction: column;
-    gap: clamp(14px,2vh,20px); min-width: 0;
+    position: relative; padding: 0; min-width: 0;
+    display: flex; flex-direction: column;
   }
-  #plants .p-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-  #plants .p-name { font-size: clamp(24px,4.2vh,38px); font-weight: 200; letter-spacing: -0.01em;
+  #plants .p-art {
+    width: 100%; aspect-ratio: 1 / 1; max-height: clamp(140px,22vh,200px);
+    background-size: contain; background-repeat: no-repeat; background-position: center;
+    margin-bottom: clamp(8px,1.2vh,14px);
+  }
+  #plants .p-divider { height: 1px; background: var(--ink); margin-bottom: clamp(10px,1.4vh,16px); }
+  #plants .p-head {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    margin-bottom: clamp(10px,1.4vh,16px);
+  }
+  #plants .p-name { font-size: clamp(22px,3.6vh,32px); font-weight: 200; letter-spacing: -0.01em;
     line-height: 1.0; }
   #plants .p-species { font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
     color: var(--secondary); margin-top: 0.5em; }
   #plants .p-pill {
     flex-shrink: 0; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
-    padding: 6px 12px; border: 1px solid var(--secondary); border-radius: 999px;
+    padding: 5px 11px; border: 1px solid var(--secondary); border-radius: 999px;
     color: var(--secondary); white-space: nowrap;
   }
   #plants .p-pill.t-ok    { color: var(--ink); border-color: var(--ink); }
   #plants .p-pill.t-watch { color: var(--secondary); border-color: var(--secondary); }
   #plants .p-pill.t-warn  { color: var(--accent); border-color: var(--accent); }
   #plants .p-pill.t-crit  { color: var(--bg); background: var(--accent); border-color: var(--accent); }
-  #plants .p-lines { display: flex; flex-direction: column; gap: clamp(8px,1.2vh,14px); }
+  #plants .p-lines { display: flex; flex-direction: column; gap: clamp(7px,1vh,11px); }
   #plants .p-line {
-    display: grid; grid-template-columns: 64px 1fr; gap: 12px; align-items: baseline;
-    padding-left: 10px; border-left: 2px solid transparent;
+    display: grid; grid-template-columns: 18px 56px 1fr; gap: 10px;
+    align-items: center; line-height: 1.25;
   }
-  #plants .p-line.t-ok      { border-left-color: var(--ink); }
-  #plants .p-line.t-watch   { border-left-color: var(--secondary); }
-  #plants .p-line.t-warn    { border-left-color: var(--accent); opacity: 0.95; }
-  #plants .p-line.t-crit    { border-left-color: var(--accent); }
-  #plants .p-line.t-unknown { border-left-color: transparent; opacity: 0.5; }
-  #plants .p-line-k {
-    font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--secondary);
-  }
+  #plants .p-icon { width: 16px; height: 16px; opacity: 0.85; }
+  #plants .p-icon .stroke { stroke-width: 1.4; }
+  #plants .p-line.t-warn .p-icon .stroke,
+  #plants .p-line.t-crit .p-icon .stroke { stroke: var(--accent); }
+  #plants .p-line.t-unknown { opacity: 0.4; }
   #plants .p-line-v {
-    font-size: clamp(13px,1.8vh,16px); font-weight: 300; line-height: 1.3;
-    font-variant-numeric: tabular-nums;
+    font-size: clamp(12px,1.6vh,14px); font-weight: 400; font-variant-numeric: tabular-nums;
+    color: var(--ink); white-space: nowrap;
   }
-  #plants .p-line.t-crit .p-line-v { color: var(--accent); }
+  #plants .p-line-rem {
+    font-size: clamp(11px,1.5vh,13px); font-weight: 300; color: var(--secondary);
+  }
+  #plants .p-line.t-crit .p-line-rem,
+  #plants .p-line.t-warn .p-line-rem { color: var(--accent); }
   #plants .p-batt-note {
-    margin-top: auto; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    margin-top: clamp(8px,1.2vh,14px); padding-top: clamp(8px,1.2vh,14px);
+    border-top: 1px solid var(--hairline);
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
     color: var(--accent);
   }
 </style>
@@ -783,6 +794,7 @@
   };
   const PLANTS = [
     { id: "audrey_i",  name: "Audrey I",  species: "Snake Plant", rules: SPECIES_RULES.snake,
+      art: "plant-snake.png",
       moistureEnt:  "sensor.audrey_i_moisture",
       tempEnt:      "sensor.audrey_i_temperature",
       dliEnt:       "sensor.audrey_i_dli",
@@ -791,6 +803,7 @@
       wateredDtEnt: "input_datetime.audrey_i_last_watered",
       fedDtEnt:     "input_datetime.audrey_i_last_fertilized" },
     { id: "audrey_ii", name: "Audrey II", species: "Snake Plant", rules: SPECIES_RULES.snake,
+      art: "plant-snake.png",
       moistureEnt:  "sensor.audrey_ii_moisture",
       tempEnt:      "sensor.audrey_ii_temperature",
       dliEnt:       "sensor.audrey_ii_dli",
@@ -799,6 +812,7 @@
       wateredDtEnt: "input_datetime.audrey_ii_last_watered",
       fedDtEnt:     "input_datetime.audrey_ii_last_fertilized" },
     { id: "vriesea",   name: "Vriesea",   species: "Tank Bromeliad", rules: SPECIES_RULES.bromeliad,
+      art: "plant-vriesea.png",
       moistureEnt:  "sensor.vriesea_moisture",
       tempEnt:      "sensor.vriesea_temperature",
       dliEnt:       "sensor.vriesea_dli",
@@ -1299,6 +1313,26 @@
     if (checks.feed.tier === "warn")     return { word: "WATCH", tier: "warn" };
     return { word: "HAPPY", tier: "ok" };
   }
+  // Editorial line-art icons matching the rest of the kiosk (hairline strokes).
+  // Each returns inline SVG sized 16x16, viewBox 0 0 24 24.
+  const ICONS = {
+    moisture: '<svg class="p-icon" viewBox="0 0 24 24" fill="none">'
+      + '<path class="stroke" d="M5 11 Q 8 9 12 11 T 19 11" stroke-linecap="round"/>'
+      + '<path class="stroke" d="M5 15 Q 8 13 12 15 T 19 15" stroke-linecap="round"/>'
+      + '</svg>',
+    light: '<svg class="p-icon" viewBox="0 0 24 24" fill="none">'
+      + '<circle class="stroke" cx="12" cy="12" r="4"/>'
+      + '<path class="stroke" d="M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2" stroke-linecap="round"/>'
+      + '</svg>',
+    water: '<svg class="p-icon" viewBox="0 0 24 24" fill="none">'
+      + '<path class="stroke" d="M12 3 C 7 11 6 14 6 16 a 6 6 0 0 0 12 0 c 0-2-1-5-6-13 z" stroke-linejoin="round"/>'
+      + '</svg>',
+    feed: '<svg class="p-icon" viewBox="0 0 24 24" fill="none">'
+      + '<path class="stroke" d="M4 18 C 4 10 10 4 20 4 c 0 10-6 16-14 16 z" stroke-linejoin="round"/>'
+      + '<path class="stroke" d="M5 19 L 14 10" stroke-linecap="round"/>'
+      + '</svg>',
+  };
+
   function renderPlants() {
     $("p-clock").textContent = fmtClock();
     const stage = $("p-stage");
@@ -1308,6 +1342,12 @@
       const n = parseFloat(v.state);
       return Number.isFinite(n) ? n : null;
     };
+    const line = (icon, value, remark, tier) =>
+      '<div class="p-line t-'+tier+'">'
+      + ICONS[icon]
+      + '<span class="p-line-v">'+escapeHtml(value)+'</span>'
+      + '<span class="p-line-rem">'+escapeHtml(remark)+'</span>'
+      + '</div>';
     const html = PLANTS.map(p => {
       const moist = num(p.moistureEnt);
       const dli   = num(p.dliEnt);
@@ -1321,19 +1361,16 @@
         feed:     evalDays(fDays, p.rules.feed, "feed"),
       };
       const verdict = plantVerdict(checks, batt);
-      const moistTxt = moist == null ? "—" : Math.round(moist) + "% — " + checks.moisture.label;
-      const dliTxt   = dli   == null ? "—" : (Math.round(dli*10)/10) + " mol — " + checks.dli.label;
-      const waterTxt = wDays == null ? "—" : wDays + "d since water — " + checks.water.label;
-      const feedTxt  = fDays == null ? "—" : fDays + "d since feed — " + checks.feed.label;
+      const moistVal = moist == null ? "—" : Math.round(moist) + "%";
+      const dliVal   = dli   == null ? "—" : (Math.round(dli*10)/10) + " mol";
+      const waterVal = wDays == null ? "—" : wDays + "d ago";
+      const feedVal  = fDays == null ? "—" : fDays + "d ago";
       const battNote = batt != null && batt < 20
         ? '<div class="p-batt-note">Sensor battery '+Math.round(batt)+'% — replace soon</div>'
         : '';
-      const line = (label, txt, tier) =>
-        '<div class="p-line t-'+tier+'">'
-        + '<span class="p-line-k">'+label+'</span>'
-        + '<span class="p-line-v">'+escapeHtml(txt)+'</span>'
-        + '</div>';
       return '<div class="p-card" data-plant="'+p.id+'">'
+        + '<div class="p-art" style="background-image:url(\''+p.art+'\')"></div>'
+        + '<div class="p-divider"></div>'
         + '<div class="p-head">'
         +   '<div>'
         +     '<div class="p-name">'+escapeHtml(p.name)+'</div>'
@@ -1342,10 +1379,10 @@
         +   '<div class="p-pill t-'+verdict.tier+'">'+verdict.word+'</div>'
         + '</div>'
         + '<div class="p-lines">'
-        +   line("Moisture", moistTxt, checks.moisture.tier)
-        +   line("Light",    dliTxt,   checks.dli.tier)
-        +   line("Water",    waterTxt, checks.water.tier)
-        +   line("Feed",     feedTxt,  checks.feed.tier)
+        +   line("light",    dliVal,   checks.dli.label,      checks.dli.tier)
+        +   line("water",    waterVal, checks.water.label,    checks.water.tier)
+        +   line("feed",     feedVal,  checks.feed.label,     checks.feed.tier)
+        +   line("moisture", moistVal, checks.moisture.label, checks.moisture.tier)
         + '</div>'
         + battNote
         + '</div>';

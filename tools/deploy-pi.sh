@@ -42,6 +42,16 @@ fi
 echo "==> scp → $PI_HOST:$REMOTE_PATH"
 scp -q "$TMP" "$PI_HOST:$REMOTE_PATH"
 
+# Sync any static assets (PNGs etc) that live next to the source.
+REMOTE_DIR="${REMOTE_PATH%/*}"
+shopt -s nullglob
+ASSETS=("$REPO_ROOT/kiosk/"*.png "$REPO_ROOT/kiosk/"*.svg "$REPO_ROOT/kiosk/"*.jpg)
+shopt -u nullglob
+if [ "${#ASSETS[@]}" -gt 0 ]; then
+  echo "==> scp ${#ASSETS[@]} static asset(s) → $PI_HOST:$REMOTE_DIR/"
+  scp -q "${ASSETS[@]}" "$PI_HOST:$REMOTE_DIR/"
+fi
+
 echo "==> Trigger Chromium reload via wtype"
 ssh -o ConnectTimeout=3 -o PreferredAuthentications=publickey -o IdentitiesOnly=yes "$PI_HOST" \
   "export WAYLAND_DISPLAY=wayland-0 XDG_RUNTIME_DIR=/run/user/\$(id -u); \

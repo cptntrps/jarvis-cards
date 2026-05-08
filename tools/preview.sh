@@ -42,6 +42,13 @@ trap 'rm -rf "$TMP_JS" "$WORKDIR"' EXIT
 # Stub the placeholders so the page can boot during render
 sed -e 's|__HA_TOKEN__|preview|' -e 's|__HA_HOST__|localhost|' "$SOURCE" > "$WORKDIR/index.html"
 
+# Copy any sibling static assets so relative <img> / background-image refs resolve.
+shopt -s nullglob
+for f in "$REPO_ROOT/kiosk/"*.png "$REPO_ROOT/kiosk/"*.svg "$REPO_ROOT/kiosk/"*.jpg; do
+  cp "$f" "$WORKDIR/"
+done
+shopt -u nullglob
+
 CHROMIUM=$(command -v chromium || command -v chromium-browser)
 [ -n "$CHROMIUM" ] || { echo "ERROR: no chromium found"; exit 1; }
 
