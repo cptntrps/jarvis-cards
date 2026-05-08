@@ -504,7 +504,10 @@
     display: flex; overflow-x: auto; overflow-y: hidden;
     scroll-snap-type: x mandatory; scroll-behavior: smooth;
     scrollbar-width: none;
+    touch-action: pan-x; /* allow horizontal drag, block vertical scroll bubble */
+    cursor: grab;
   }
+  #plants .p-stage.dragging { cursor: grabbing; scroll-behavior: auto; }
   #plants .p-stage::-webkit-scrollbar { display: none; }
   #plants .p-card {
     flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always;
@@ -1498,7 +1501,7 @@
       }
     }
   }
-  // Update active dot based on scroll position; tap dot to jump.
+  // Update active dot based on scroll position; tap dot to jump; pointer-drag swipe.
   function wirePlantSwipe() {
     const stage = $("p-stage");
     const dots  = $("p-dots");
@@ -1515,6 +1518,47 @@
       const i = parseInt(btn.dataset.plantIdx, 10) || 0;
       stage.scrollTo({ left: i * stage.clientWidth, behavior: "smooth" });
     });
+    // Pointer-drag swipe: works for mouse, touch, and stylus uniformly. Native
+    // scroll-snap is unreliable under chromium-on-wayland with some touch
+    // drivers, so we drive scrollLeft ourselves and snap on release.
+    let dragging = false, startX = 0, startScroll = 0, lastX = 0, lastT = 0, vel = 0;
+    stage.addEventListener("pointerdown", (e) => {
+      // Don't start a drag from the dot rail itself
+      if (e.target.closest(".p-dot")) return;
+      dragging = true;
+      startX = e.clientX; lastX = e.clientX; lastT = e.timeStamp;
+      startScroll = stage.scrollLeft; vel = 0;
+      stage.classList.add("dragging");
+      try { stage.setPointerCapture(e.pointerId); } catch {}
+    });
+    stage.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      stage.scrollLeft = startScroll - dx;
+      const dt = Math.max(1, e.timeStamp - lastT);
+      vel = (e.clientX - lastX) / dt; // px / ms
+      lastX = e.clientX; lastT = e.timeStamp;
+    });
+    const endDrag = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      stage.classList.remove("dragging");
+      // Project the next snap target by current scroll + velocity flick (200 ms).
+      const w = stage.clientWidth || 1;
+      const projected = stage.scrollLeft - vel * 200;
+      let idx = Math.round(projected / w);
+      const max = stage.children.length - 1;
+      if (idx < 0) idx = 0; if (idx > max) idx = max;
+      // If finger barely moved, snap to whatever is closest now.
+      if (Math.abs(stage.scrollLeft - startScroll) < 6) {
+        idx = Math.round(stage.scrollLeft / w);
+      }
+      stage.scrollTo({ left: idx * w, behavior: "smooth" });
+      try { stage.releasePointerCapture(e.pointerId); } catch {}
+    };
+    stage.addEventListener("pointerup", endDrag);
+    stage.addEventListener("pointercancel", endDrag);
+    stage.addEventListener("pointerleave", endDrag);
   }
 
   let lastAckText = null;
