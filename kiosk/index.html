@@ -3,9 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=1024, height=600, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<meta name="theme-color" content="#FFFFFF" />
 <title>Jarvis</title>
 <style>
   :root {
+    /* Lock the page to light scheme regardless of OS / UA forced-dark-mode. */
+    color-scheme: light;
+    forced-color-adjust: none;
     --bg: #FFFFFF;
     --ink: #1A1A1A;
     --secondary: #4A4640;
@@ -365,8 +370,7 @@
     position: absolute; inset: 0; width: 100%; height: 100%;
     object-fit: contain; opacity: 1;
   }
-  html[data-theme="dark"] #floorplan .fp-canvas img,
-  body.face-floorplan #floorplan .fp-canvas img { opacity: 0.85; filter: invert(1) hue-rotate(180deg); }
+  html[data-theme="dark"] #floorplan .fp-canvas img { opacity: 0.85; filter: invert(1) hue-rotate(180deg); }
   #floorplan .fp-svg {
     position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
   }
@@ -1050,8 +1054,6 @@
     $("w-hum").textContent = (typeof a.humidity === "number") ? Math.round(a.humidity) : "—";
     $("w-wind").textContent = (typeof a.wind_speed === "number") ? Math.round(a.wind_speed) : "—";
     $("w-windunit").textContent = a.wind_speed_unit || "";
-    const isNight = w.state === "clear-night" || (w.state && w.state.includes("night"));
-    document.documentElement.dataset.theme = isNight ? "dark" : "light";
     renderWeatherGlyph(w.state);
   }
 
@@ -1683,6 +1685,20 @@
     if (reconnectTimer) return;
     reconnectTimer = setTimeout(()=>{ reconnectTimer=null; connect(); }, 2000);
   }
+
+  // Time-driven theme: dark from midnight to 07:00, light otherwise.
+  // Opt-in per device via ?nightblack=1 — leaves Echo on light 24/7.
+  const NIGHTBLACK = new URLSearchParams(location.search).get("nightblack") === "1";
+  function applyTimeTheme() {
+    if (!NIGHTBLACK) {
+      document.documentElement.dataset.theme = "light";
+      return;
+    }
+    const h = new Date().getHours();
+    document.documentElement.dataset.theme = (h >= 0 && h < 7) ? "dark" : "light";
+  }
+  applyTimeTheme();
+  setInterval(applyTimeTheme, 60000);
 
   // Tick clocks: 1s on home (active), 10s on auxiliary index clocks.
   setInterval(()=>{
