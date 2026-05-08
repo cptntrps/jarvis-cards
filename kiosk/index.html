@@ -1518,47 +1518,73 @@
       const i = parseInt(btn.dataset.plantIdx, 10) || 0;
       stage.scrollTo({ left: i * stage.clientWidth, behavior: "smooth" });
     });
-    // Pointer-drag swipe: works for mouse, touch, and stylus uniformly. Native
-    // scroll-snap is unreliable under chromium-on-wayland with some touch
-    // drivers, so we drive scrollLeft ourselves and snap on release.
-    let dragging = false, startX = 0, startScroll = 0, lastX = 0, lastT = 0, vel = 0;
-    stage.addEventListener("pointerdown", (e) => {
-      // Don't start a drag from the dot rail itself
-      if (e.target.closest(".p-dot")) return;
-      dragging = true;
-      startX = e.clientX; lastX = e.clientX; lastT = e.timeStamp;
+    // Drag-driven swipe — drive scrollLeft ourselves and snap on release.
+    // Both pointer events (modern) and touch events (Android WebView fallback)
+    // are wired; whichever fires first claims the drag for that gesture.
+    let dragging = false, startX = 0, startScroll = 0,
+        lastX = 0, lastT = 0, vel = 0, gestureSrc = null;
+    const beginDrag = (clientX, src, captureId) => {
+      dragging = true; gestureSrc = src;
+      startX = clientX; lastX = clientX; lastT = performance.now();
       startScroll = stage.scrollLeft; vel = 0;
       stage.classList.add("dragging");
-      try { stage.setPointerCapture(e.pointerId); } catch {}
-    });
-    stage.addEventListener("pointermove", (e) => {
+      if (src === "pointer" && captureId != null) {
+        try { stage.setPointerCapture(captureId); } catch {}
+      }
+    };
+    const moveDrag = (clientX) => {
       if (!dragging) return;
-      const dx = e.clientX - startX;
+      const dx = clientX - startX;
       stage.scrollLeft = startScroll - dx;
-      const dt = Math.max(1, e.timeStamp - lastT);
-      vel = (e.clientX - lastX) / dt; // px / ms
-      lastX = e.clientX; lastT = e.timeStamp;
-    });
-    const endDrag = (e) => {
+      const t = performance.now();
+      const dt = Math.max(1, t - lastT);
+      vel = (clientX - lastX) / dt;
+      lastX = clientX; lastT = t;
+    };
+    const endDrag = (captureId) => {
       if (!dragging) return;
-      dragging = false;
+      dragging = false; gestureSrc = null;
       stage.classList.remove("dragging");
-      // Project the next snap target by current scroll + velocity flick (200 ms).
       const w = stage.clientWidth || 1;
       const projected = stage.scrollLeft - vel * 200;
       let idx = Math.round(projected / w);
       const max = stage.children.length - 1;
       if (idx < 0) idx = 0; if (idx > max) idx = max;
-      // If finger barely moved, snap to whatever is closest now.
       if (Math.abs(stage.scrollLeft - startScroll) < 6) {
         idx = Math.round(stage.scrollLeft / w);
       }
       stage.scrollTo({ left: idx * w, behavior: "smooth" });
-      try { stage.releasePointerCapture(e.pointerId); } catch {}
+      if (captureId != null) {
+        try { stage.releasePointerCapture(captureId); } catch {}
+      }
     };
-    stage.addEventListener("pointerup", endDrag);
-    stage.addEventListener("pointercancel", endDrag);
-    stage.addEventListener("pointerleave", endDrag);
+    // Pointer path (mouse, modern touch, stylus)
+    stage.addEventListener("pointerdown", (e) => {
+      if (e.target.closest(".p-dot")) return;
+      if (gestureSrc === "touch") return; // touch already running
+      beginDrag(e.clientX, "pointer", e.pointerId);
+    });
+    stage.addEventListener("pointermove", (e) => {
+      if (gestureSrc !== "pointer") return;
+      moveDrag(e.clientX);
+    });
+    const endPointer = (e) => { if (gestureSrc === "pointer") endDrag(e.pointerId); };
+    stage.addEventListener("pointerup", endPointer);
+    stage.addEventListener("pointercancel", endPointer);
+    stage.addEventListener("pointerleave", endPointer);
+    // Touch path (Android WebView / older browsers — fires before pointer in some webviews)
+    stage.addEventListener("touchstart", (e) => {
+      if (!e.touches.length) return;
+      if (e.target.closest(".p-dot")) return;
+      beginDrag(e.touches[0].clientX, "touch", null);
+    }, { passive: true });
+    stage.addEventListener("touchmove", (e) => {
+      if (gestureSrc !== "touch" || !e.touches.length) return;
+      moveDrag(e.touches[0].clientX);
+    }, { passive: true });
+    const endTouch = () => { if (gestureSrc === "touch") endDrag(null); };
+    stage.addEventListener("touchend", endTouch);
+    stage.addEventListener("touchcancel", endTouch);
   }
 
   let lastAckText = null;
