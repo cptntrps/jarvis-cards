@@ -84,15 +84,8 @@
   .conn-bar.disconnected { background: var(--accent); animation: connpulse 1.6s ease-in-out infinite; }
   @keyframes connpulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.9; } }
 
-  /* ============ BURN-IN: idle drift + dim ============ */
+  /* ============ BURN-IN: idle dim only (no drift — disorienting) ============ */
   body.idle-dim { transition: opacity 4s var(--ease); }
-  body.idle-dim .face.active { animation: drift 90s ease-in-out infinite; }
-  @keyframes drift {
-    0%,100% { transform: translate(0,0); }
-    25%     { transform: translate(6px,-4px); }
-    50%     { transform: translate(-4px,6px); }
-    75%     { transform: translate(-6px,-3px); }
-  }
   body.idle-dim #home .time, body.idle-dim #home .date { opacity: 0.7; }
 
   /* ============ PER-FACE MOOD ============ */
@@ -1585,8 +1578,22 @@
     const endTouch = () => { if (gestureSrc === "touch") endDrag(null); };
     stage.addEventListener("touchend", endTouch);
     stage.addEventListener("touchcancel", endTouch);
-    // Auto-rotation removed — the sideways motion was disorienting. Use the
-    // dot rail or swipe to navigate plants manually.
+
+    // Auto-rotate every 10s; pauses 20s after manual interaction.
+    let pauseUntil = 0;
+    const bumpPause = () => { pauseUntil = Date.now() + 20000; };
+    stage.addEventListener("pointerdown", bumpPause);
+    stage.addEventListener("touchstart", bumpPause, { passive: true });
+    dots.addEventListener("click", bumpPause, true);
+    setInterval(() => {
+      if (!stage.clientWidth) return;
+      if (Date.now() < pauseUntil) return;
+      if (!document.getElementById("plants").classList.contains("active")) return;
+      const w = stage.clientWidth;
+      const cur = Math.round(stage.scrollLeft / w);
+      const next = (cur + 1) % stage.children.length;
+      stage.scrollTo({ left: next * w, behavior: "smooth" });
+    }, 10000);
   }
 
   let lastAckText = null;
