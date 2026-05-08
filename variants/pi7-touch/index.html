@@ -1012,30 +1012,19 @@
     const sel = ROOMS.find(r => r.id === fpSelected) || ROOMS[0];
     $("fp-active-room").textContent = sel.label;
 
-    // Stats — read from ROOM_SENSORS
+    // Stats — only those the room actually has data for
     const stats = [];
-    const sensors = ROOM_SENSORS[sel.id] || {};
-    function readNum(eid) {
-      const v = state[eid];
-      if (!v || v.state === "unavailable" || v.state === "unknown") return null;
-      const n = parseFloat(v.state);
-      return Number.isFinite(n) ? n : null;
+    if (sel.tempEntity) {
+      const v = state[sel.tempEntity]?.state;
+      if (v != null) stats.push({ k: "Temp", v: Math.round(parseFloat(v)) + '<span class="u">°C</span>' });
     }
-    function readBin(eid) {
-      const v = state[eid];
-      return v ? v.state === "on" : null;
+    const humEnt = "sensor.humidity_"+sel.id;
+    if (state[humEnt]) {
+      stats.push({ k: "Humidity", v: Math.round(parseFloat(state[humEnt].state)) + '<span class="u">%</span>' });
     }
-    const t = readNum(sensors.temp);
-    if (t != null) stats.push({ k: "Temp", v: Math.round(t) + '<span class="u">°C</span>' });
-    const h = readNum(sensors.humidity);
-    if (h != null) stats.push({ k: "Humidity", v: Math.round(h) + '<span class="u">%</span>' });
-    const lx = readNum(sensors.illuminance);
-    if (lx != null) stats.push({ k: "Light Level", v: Math.round(lx) + '<span class="u">lx</span>', muted: lx < 30 });
-    const presence = readBin(sensors.presence);
-    if (presence != null) stats.push({ k: "Presence", v: presence ? "Now" : "Quiet", muted: !presence });
-    const motion = readBin(sensors.motion);
-    if (motion != null && presence == null) {
-      stats.push({ k: "Activity", v: motion ? "Now" : "Quiet", muted: !motion });
+    if (state["binary_sensor.motion_"+sel.id]) {
+      const m = state["binary_sensor.motion_"+sel.id].state === "on";
+      stats.push({ k: "Activity", v: m ? "Now" : "Quiet", muted: !m });
     }
     $("fp-stats").innerHTML = stats.length
       ? stats.map(s => '<div class="fp-stat"><div class="k">'+s.k+'</div><div class="v'+(s.muted?' muted':'')+'">'+s.v+'</div></div>').join("")
