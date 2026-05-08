@@ -1215,6 +1215,9 @@
   }
   function highlightNav(activeFace) {
     document.querySelectorAll(".nav-bar .nav-pill").forEach(p => {
+      // The room-shortcut pill (#this-room-pill) is a convenience, not a face.
+      // Don't claim "active" — let the canonical face pill (MAP) hold it.
+      if (p.id === "this-room-pill") { p.classList.remove("active"); return; }
       p.classList.toggle("active", p.dataset.flip === activeFace);
     });
   }
