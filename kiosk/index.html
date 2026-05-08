@@ -520,13 +520,18 @@
   html[data-theme="dark"] #plants .p-art,
   body.face-listening #plants .p-art,
   body.face-ack       #plants .p-art { filter: invert(1) hue-rotate(180deg); }
-  #plants .p-info { display: flex; flex-direction: column; gap: clamp(14px,2vh,22px); min-width: 0; }
-  #plants .p-head { display: flex; justify-content: space-between; align-items: flex-start;
-    gap: 16px; padding-bottom: clamp(10px,1.4vh,18px); border-bottom: 1px solid var(--ink); }
-  #plants .p-name { font-size: clamp(40px,7vh,68px); font-weight: 200; letter-spacing: -0.02em;
-    line-height: 1.0; }
+  #plants .p-info { display: flex; flex-direction: column; gap: clamp(12px,1.8vh,20px); min-width: 0; }
+  /* Band A within the card: species eyebrow + verdict pill on a single row. */
+  #plants .p-eyebrow {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  }
+  #plants .p-name {
+    font-size: clamp(40px,7vh,68px); font-weight: 200; letter-spacing: -0.02em;
+    line-height: 1.0; padding-bottom: clamp(10px,1.4vh,18px);
+    border-bottom: 1px solid var(--ink);
+  }
   #plants .p-species { font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase;
-    color: var(--secondary); margin-top: 0.6em; }
+    color: var(--secondary); }
   #plants .p-pill {
     flex-shrink: 0; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
     padding: 7px 14px; border: 1px solid var(--secondary); border-radius: 999px;
@@ -555,10 +560,31 @@
   }
   #plants .p-line.t-crit .p-line-rem,
   #plants .p-line.t-warn .p-line-rem { color: var(--accent); }
+  /* Inline 7-day moisture sparkline lives at the end of the moisture row. */
+  #plants .p-line-spark { display: inline-flex; margin-left: auto; align-self: center; }
+  #plants .p-spark { width: 96px; height: 22px; display: block; }
+  #plants .p-spark-empty { color: var(--secondary); opacity: 0.5; font-size: 18px; }
+  #plants .p-line:has(.p-line-spark) {
+    grid-template-columns: 24px 96px 1fr auto;
+  }
   #plants .p-batt-note {
-    padding-top: clamp(10px,1.4vh,16px); border-top: 1px solid var(--hairline);
+    padding-top: clamp(8px,1.2vh,14px); border-top: 1px solid var(--hairline);
     font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
-    color: var(--accent);
+    color: var(--secondary);
+  }
+  #plants .p-batt-note.accent { color: var(--accent); }
+  /* Band D meta strip: 3-column key/value above the nav. */
+  #plants .p-meta {
+    margin-top: clamp(10px,1.4vh,18px); padding-top: clamp(12px,1.8vh,20px);
+    border-top: 1px solid var(--hairline);
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(10px,1.4vw,20px);
+  }
+  #plants .p-meta-k {
+    font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--secondary);
+  }
+  #plants .p-meta-v {
+    font-size: clamp(15px,2.2vh,20px); font-weight: 400; font-variant-numeric: tabular-nums;
+    margin-top: 0.3em;
   }
   /* Indicator dots — a tap-to-jump rail above the global nav-bar. */
   #plants .p-dots {
@@ -1317,19 +1343,23 @@
     if (d > r.ok)      return { tier: "warn", label: kind + " soon" };
     return { tier: "ok", label: "on track" };
   }
+  // Map highest-priority concern to the canonical verdict lexicon (design-system §4):
+  // ON TRACK / WATCH / LATE / CRITICAL. The single worst check also wins the accent
+  // budget — every other line is demoted so only one terracotta element shows at a time.
+  const TIER_ORDER = { ok: 0, watch: 1, warn: 2, crit: 3, unknown: -1 };
+  const TIER_WORD  = { ok: "ON TRACK", watch: "WATCH", warn: "LATE", crit: "CRITICAL",
+                       unknown: "OFFLINE" };
   function plantVerdict(checks, batt) {
-    // Headline: priority — critical sensor, then critical care issues, then watch states.
-    if (batt != null && batt < 5) return { word: "SENSOR", tier: "warn" };
-    if (checks.moisture.tier === "crit" && checks.moisture.label.indexOf("dry") === 0)
-      return { word: "THIRSTY", tier: "crit" };
-    if (checks.moisture.tier === "crit") return { word: "OVERWATERED", tier: "crit" };
-    if (checks.dli.tier === "crit")      return { word: "NEEDS LIGHT", tier: "crit" };
-    if (checks.water.tier === "crit")    return { word: "WATER LATE", tier: "crit" };
-    if (checks.feed.tier === "crit")     return { word: "FEED LATE", tier: "warn" };
-    if (checks.moisture.tier === "warn" || checks.dli.tier === "warn"
-        || checks.water.tier === "warn") return { word: "WATCH", tier: "warn" };
-    if (checks.feed.tier === "warn")     return { word: "WATCH", tier: "warn" };
-    return { word: "HAPPY", tier: "ok" };
+    let winner = "ok", winnerKey = null;
+    for (const k of ["moisture","dli","water","feed"]) {
+      if (TIER_ORDER[checks[k].tier] > TIER_ORDER[winner]) {
+        winner = checks[k].tier; winnerKey = k;
+      }
+    }
+    if (batt != null && batt < 5 && TIER_ORDER[winner] < TIER_ORDER.warn) {
+      winner = "warn"; winnerKey = "battery";
+    }
+    return { word: TIER_WORD[winner] || "OFFLINE", tier: winner, accentKey: winnerKey };
   }
   // Editorial line-art icons matching the rest of the kiosk (hairline strokes).
   // Each returns inline SVG sized 16x16, viewBox 0 0 24 24.
@@ -1351,6 +1381,66 @@
       + '</svg>',
   };
 
+  // Per-entity 7-day sample buffer for the moisture sparkline. Filled from
+  // /api/history/period on first render after live boot, refreshed every 15 min.
+  const moistureHistory = {};
+  const moistureFetchAt = {};
+  async function fetchMoistureHistory(eid) {
+    if (DEMO) return;
+    if (!HA_TOKEN || HA_TOKEN === "__HA_TOKEN__") return;
+    const last = moistureFetchAt[eid] || 0;
+    if (Date.now() - last < 15 * 60 * 1000) return;
+    moistureFetchAt[eid] = Date.now();
+    const since = new Date(Date.now() - 7 * 86400000).toISOString();
+    try {
+      const r = await fetch(
+        "/api/history/period/" + since
+        + "?filter_entity_id=" + encodeURIComponent(eid)
+        + "&minimal_response&significant_changes_only",
+        { headers: { Authorization: "Bearer " + HA_TOKEN } }
+      );
+      const data = await r.json();
+      if (!Array.isArray(data) || !data[0]) return;
+      moistureHistory[eid] = data[0]
+        .map(s => ({ ts: Date.parse(s.last_changed || s.last_updated), val: parseFloat(s.state) }))
+        .filter(p => Number.isFinite(p.val) && Number.isFinite(p.ts));
+      // Force re-render so the sparkline paints.
+      const stage = $("p-stage"); if (stage) stage.dataset.signature = "";
+      renderPlants();
+    } catch { /* offline / cors / 401 — leave em-dash */ }
+  }
+  function bucketDaily(samples) {
+    if (!samples) return null;
+    const now = Date.now(), DAY = 86400000;
+    const bins = Array(7).fill(null).map(() => []);
+    for (const s of samples) {
+      const d = Math.floor((now - s.ts) / DAY);
+      if (d >= 0 && d < 7) bins[6 - d].push(s.val);
+    }
+    return bins.map(arr => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null);
+  }
+  function sparklineSVG(values) {
+    if (!values) return "";
+    const valid = values.filter(v => v != null);
+    // Need at least 3 daily buckets to show a trend; otherwise render an em-dash
+    // so the row doesn't look like a render bug.
+    if (valid.length < 3) return '<span class="p-spark-empty">—</span>';
+    const min = Math.min(...valid), max = Math.max(...valid);
+    const range = Math.max(1, max - min);
+    const W = 96, H = 22, GAP = 3, BW = (W - GAP * 6) / 7;
+    const bars = values.map((v, i) => {
+      if (v == null) return "";
+      const norm = (v - min) / range;
+      const bh = 2 + norm * (H - 4);
+      const x = i * (BW + GAP);
+      const op = (0.30 + (i / 6) * 0.70).toFixed(2);
+      return '<rect x="'+x.toFixed(1)+'" y="'+(H - bh).toFixed(1)+'" '
+           + 'width="'+BW.toFixed(1)+'" height="'+bh.toFixed(1)+'" '
+           + 'fill="var(--ink)" opacity="'+op+'"/>';
+    }).join("");
+    return '<svg class="p-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+bars+'</svg>';
+  }
+
   function renderPlants() {
     $("p-clock").textContent = fmtClock();
     const stage = $("p-stage");
@@ -1360,11 +1450,18 @@
       const n = parseFloat(v.state);
       return Number.isFinite(n) ? n : null;
     };
-    const line = (icon, value, remark, tier) =>
+    // A line tier is dimmed to "watch" unless it's the verdict's accent winner —
+    // single accent budget per design-system §4.
+    const visualTier = (key, tier, accentKey) => {
+      if (tier === "ok" || tier === "unknown") return tier;
+      return key === accentKey ? tier : "watch";
+    };
+    const line = (icon, value, remark, tier, extra) =>
       '<div class="p-line t-'+tier+'">'
       + ICONS[icon]
       + '<span class="p-line-v">'+escapeHtml(value)+'</span>'
       + '<span class="p-line-rem">'+escapeHtml(remark)+'</span>'
+      + (extra || "")
       + '</div>';
     const html = PLANTS.map(p => {
       const moist = num(p.moistureEnt);
@@ -1379,37 +1476,59 @@
         feed:     evalDays(fDays, p.rules.feed, "feed"),
       };
       const verdict = plantVerdict(checks, batt);
+      const ak = verdict.accentKey;
+      // Defer history fetch (idempotent, throttled internally).
+      if (!DEMO) fetchMoistureHistory(p.moistureEnt);
       const moistVal = moist == null ? "—" : Math.round(moist) + "%";
       const dliVal   = dli   == null ? "—" : (Math.round(dli*10)/10) + " mol";
       const waterVal = wDays == null ? "—" : wDays + "d ago";
       const feedVal  = fDays == null ? "—" : fDays + "d ago";
+      const buckets  = DEMO
+        ? Array.from({length:7}, (_,i) => moist == null ? null : moist + Math.sin(i*1.1)*4)
+        : bucketDaily(moistureHistory[p.moistureEnt]);
+      const sparkSvg = sparklineSVG(buckets);
+      const sparkExtra = sparkSvg
+        ? '<span class="p-line-spark">'+sparkSvg+'</span>'
+        : "";
+      // Meta strip projections — next-water = days remaining before "watch" tier kicks in.
+      const nextWaterDays = wDays == null ? null : Math.max(0, p.rules.water.ok - wDays);
+      const nextWaterTxt  = nextWaterDays == null ? "—"
+                          : nextWaterDays === 0 ? "due now"
+                          : "in " + nextWaterDays + "d";
+      const dliMeta       = dli == null ? "—" : (Math.round(dli*10)/10) + " mol today";
+      const mediumLabel   = p.species === "Tank Bromeliad" ? "tank + soil" : "soil only";
+      // Battery note: secondary by default; only paints accent when battery is the
+      // verdict's accent winner (sensor truly dying). One accent per face.
       const battNote = batt != null && batt < 20
-        ? '<div class="p-batt-note">Sensor battery '+Math.round(batt)+'% — replace soon</div>'
+        ? '<div class="p-batt-note'+(ak === "battery" ? " accent" : "")+'">'
+          + 'Sensor battery '+Math.round(batt)+'% — replace soon</div>'
         : '';
       return '<div class="p-card" data-plant="'+p.id+'">'
         + '<div class="p-art" style="background-image:url(\''+p.art+'\')"></div>'
         + '<div class="p-info">'
-        +   '<div class="p-head">'
-        +     '<div>'
-        +       '<div class="p-name">'+escapeHtml(p.name)+'</div>'
-        +       '<div class="p-species">'+escapeHtml(p.species)+'</div>'
-        +     '</div>'
-        +     '<div class="p-pill t-'+verdict.tier+'">'+verdict.word+'</div>'
+        +   '<div class="p-eyebrow">'
+        +     '<span class="p-species">'+escapeHtml(p.species)+'</span>'
+        +     '<span class="p-pill t-'+verdict.tier+'">'+verdict.word+'</span>'
         +   '</div>'
+        +   '<div class="p-name">'+escapeHtml(p.name)+'</div>'
         +   '<div class="p-lines">'
-        +     line("light",    dliVal,   checks.dli.label,      checks.dli.tier)
-        +     line("water",    waterVal, checks.water.label,    checks.water.tier)
-        +     line("feed",     feedVal,  checks.feed.label,     checks.feed.tier)
-        +     line("moisture", moistVal, checks.moisture.label, checks.moisture.tier)
+        +     line("light",    dliVal,   checks.dli.label,      visualTier("dli",      checks.dli.tier,      ak))
+        +     line("water",    waterVal, checks.water.label,    visualTier("water",    checks.water.tier,    ak))
+        +     line("feed",     feedVal,  checks.feed.label,     visualTier("feed",     checks.feed.tier,     ak))
+        +     line("moisture", moistVal, checks.moisture.label, visualTier("moisture", checks.moisture.tier, ak), sparkExtra)
         +   '</div>'
         +   battNote
+        +   '<div class="p-meta">'
+        +     '<div class="p-meta-cell"><div class="p-meta-k">Next water</div><div class="p-meta-v">'+escapeHtml(nextWaterTxt)+'</div></div>'
+        +     '<div class="p-meta-cell"><div class="p-meta-k">Light today</div><div class="p-meta-v">'+escapeHtml(dliMeta)+'</div></div>'
+        +     '<div class="p-meta-cell"><div class="p-meta-k">Medium</div><div class="p-meta-v">'+escapeHtml(mediumLabel)+'</div></div>'
+        +   '</div>'
         + '</div>'
         + '</div>';
     }).join("");
     if (stage.dataset.signature !== html) {
       stage.innerHTML = html;
       stage.dataset.signature = html;
-      // Re-render dot rail to match plant count.
       const dots = $("p-dots");
       if (dots) {
         dots.innerHTML = PLANTS.map((p,i) =>
