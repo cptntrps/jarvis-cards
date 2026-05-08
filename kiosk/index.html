@@ -497,67 +497,80 @@
   }
 
   /* ---------- PLANTS ---------- */
+  /* Stage = horizontal scroll-snap container with one plant per page. */
   #plants .p-stage {
-    position: absolute; left: clamp(40px,5vw,72px); right: clamp(40px,5vw,72px);
-    top: clamp(110px,14vh,150px); bottom: clamp(80px,10vh,120px);
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(20px,2.5vw,36px);
+    position: absolute; left: 0; right: 0;
+    top: clamp(96px,12vh,140px); bottom: clamp(96px,11vh,140px);
+    display: flex; overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    scrollbar-width: none;
   }
+  #plants .p-stage::-webkit-scrollbar { display: none; }
   #plants .p-card {
-    position: relative; padding: 0; min-width: 0;
-    display: flex; flex-direction: column;
+    flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always;
+    padding: 0 clamp(40px,6vw,90px);
+    display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px,4vw,64px);
+    align-items: center;
   }
   #plants .p-art {
-    width: 100%; aspect-ratio: 1 / 1; max-height: clamp(140px,22vh,200px);
+    width: 100%; aspect-ratio: 1 / 1; max-height: clamp(280px,55vh,440px);
     background-size: contain; background-repeat: no-repeat; background-position: center;
-    margin-bottom: clamp(8px,1.2vh,14px);
+    justify-self: center;
   }
-  /* Invert the dark line art to white when the card sits on a dark background. */
   html[data-theme="dark"] #plants .p-art,
   body.face-listening #plants .p-art,
   body.face-ack       #plants .p-art { filter: invert(1) hue-rotate(180deg); }
-  #plants .p-divider { height: 1px; background: var(--ink); margin-bottom: clamp(10px,1.4vh,16px); }
-  #plants .p-head {
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
-    margin-bottom: clamp(10px,1.4vh,16px);
-  }
-  #plants .p-name { font-size: clamp(22px,3.6vh,32px); font-weight: 200; letter-spacing: -0.01em;
+  #plants .p-info { display: flex; flex-direction: column; gap: clamp(14px,2vh,22px); min-width: 0; }
+  #plants .p-head { display: flex; justify-content: space-between; align-items: flex-start;
+    gap: 16px; padding-bottom: clamp(10px,1.4vh,18px); border-bottom: 1px solid var(--ink); }
+  #plants .p-name { font-size: clamp(40px,7vh,68px); font-weight: 200; letter-spacing: -0.02em;
     line-height: 1.0; }
-  #plants .p-species { font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
-    color: var(--secondary); margin-top: 0.5em; }
+  #plants .p-species { font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--secondary); margin-top: 0.6em; }
   #plants .p-pill {
-    flex-shrink: 0; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
-    padding: 5px 11px; border: 1px solid var(--secondary); border-radius: 999px;
-    color: var(--secondary); white-space: nowrap;
+    flex-shrink: 0; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
+    padding: 7px 14px; border: 1px solid var(--secondary); border-radius: 999px;
+    color: var(--secondary); white-space: nowrap; align-self: flex-start;
   }
   #plants .p-pill.t-ok    { color: var(--ink); border-color: var(--ink); }
   #plants .p-pill.t-watch { color: var(--secondary); border-color: var(--secondary); }
   #plants .p-pill.t-warn  { color: var(--accent); border-color: var(--accent); }
   #plants .p-pill.t-crit  { color: var(--bg); background: var(--accent); border-color: var(--accent); }
-  #plants .p-lines { display: flex; flex-direction: column; gap: clamp(7px,1vh,11px); }
+  #plants .p-lines { display: flex; flex-direction: column; gap: clamp(10px,1.6vh,16px); }
   #plants .p-line {
-    display: grid; grid-template-columns: 18px 56px 1fr; gap: 10px;
+    display: grid; grid-template-columns: 24px 96px 1fr; gap: 14px;
     align-items: center; line-height: 1.25;
   }
-  #plants .p-icon { width: 16px; height: 16px; opacity: 0.85; }
-  #plants .p-icon .stroke { stroke-width: 1.4; }
+  #plants .p-icon { width: 20px; height: 20px; opacity: 0.9; }
+  #plants .p-icon .stroke { stroke-width: 1.5; }
   #plants .p-line.t-warn .p-icon .stroke,
   #plants .p-line.t-crit .p-icon .stroke { stroke: var(--accent); }
   #plants .p-line.t-unknown { opacity: 0.4; }
   #plants .p-line-v {
-    font-size: clamp(12px,1.6vh,14px); font-weight: 400; font-variant-numeric: tabular-nums;
+    font-size: clamp(15px,2.2vh,20px); font-weight: 400; font-variant-numeric: tabular-nums;
     color: var(--ink); white-space: nowrap;
   }
   #plants .p-line-rem {
-    font-size: clamp(11px,1.5vh,13px); font-weight: 300; color: var(--secondary);
+    font-size: clamp(13px,1.8vh,16px); font-weight: 300; color: var(--secondary);
   }
   #plants .p-line.t-crit .p-line-rem,
   #plants .p-line.t-warn .p-line-rem { color: var(--accent); }
   #plants .p-batt-note {
-    margin-top: clamp(8px,1.2vh,14px); padding-top: clamp(8px,1.2vh,14px);
-    border-top: 1px solid var(--hairline);
-    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    padding-top: clamp(10px,1.4vh,16px); border-top: 1px solid var(--hairline);
+    font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
     color: var(--accent);
   }
+  /* Indicator dots — a tap-to-jump rail above the global nav-bar. */
+  #plants .p-dots {
+    position: absolute; left: 0; right: 0; bottom: clamp(76px,10vh,108px);
+    display: flex; justify-content: center; gap: 14px; z-index: 2;
+  }
+  #plants .p-dot {
+    width: 8px; height: 8px; border-radius: 50%; padding: 0;
+    background: transparent; border: 1px solid var(--secondary);
+    cursor: pointer; transition: background 280ms var(--ease), border-color 280ms var(--ease);
+  }
+  #plants .p-dot.active { background: var(--ink); border-color: var(--ink); }
 </style>
 </head>
 <body>
@@ -704,6 +717,7 @@
   <div class="eyebrow">Plants</div>
   <div class="index" id="p-clock">—</div>
   <div class="p-stage" id="p-stage"></div>
+  <div class="p-dots" id="p-dots"></div>
 </section>
 
 <!-- ============ GLOBAL NAV + MODE TOGGLE ============ -->
@@ -1374,27 +1388,53 @@
         : '';
       return '<div class="p-card" data-plant="'+p.id+'">'
         + '<div class="p-art" style="background-image:url(\''+p.art+'\')"></div>'
-        + '<div class="p-divider"></div>'
-        + '<div class="p-head">'
-        +   '<div>'
-        +     '<div class="p-name">'+escapeHtml(p.name)+'</div>'
-        +     '<div class="p-species">'+escapeHtml(p.species)+'</div>'
+        + '<div class="p-info">'
+        +   '<div class="p-head">'
+        +     '<div>'
+        +       '<div class="p-name">'+escapeHtml(p.name)+'</div>'
+        +       '<div class="p-species">'+escapeHtml(p.species)+'</div>'
+        +     '</div>'
+        +     '<div class="p-pill t-'+verdict.tier+'">'+verdict.word+'</div>'
         +   '</div>'
-        +   '<div class="p-pill t-'+verdict.tier+'">'+verdict.word+'</div>'
+        +   '<div class="p-lines">'
+        +     line("light",    dliVal,   checks.dli.label,      checks.dli.tier)
+        +     line("water",    waterVal, checks.water.label,    checks.water.tier)
+        +     line("feed",     feedVal,  checks.feed.label,     checks.feed.tier)
+        +     line("moisture", moistVal, checks.moisture.label, checks.moisture.tier)
+        +   '</div>'
+        +   battNote
         + '</div>'
-        + '<div class="p-lines">'
-        +   line("light",    dliVal,   checks.dli.label,      checks.dli.tier)
-        +   line("water",    waterVal, checks.water.label,    checks.water.tier)
-        +   line("feed",     feedVal,  checks.feed.label,     checks.feed.tier)
-        +   line("moisture", moistVal, checks.moisture.label, checks.moisture.tier)
-        + '</div>'
-        + battNote
         + '</div>';
     }).join("");
     if (stage.dataset.signature !== html) {
       stage.innerHTML = html;
       stage.dataset.signature = html;
+      // Re-render dot rail to match plant count.
+      const dots = $("p-dots");
+      if (dots) {
+        dots.innerHTML = PLANTS.map((p,i) =>
+          '<button class="p-dot'+(i===0?" active":"")+'" data-plant-idx="'+i+'" aria-label="'+escapeHtml(p.name)+'"></button>'
+        ).join("");
+      }
     }
+  }
+  // Update active dot based on scroll position; tap dot to jump.
+  function wirePlantSwipe() {
+    const stage = $("p-stage");
+    const dots  = $("p-dots");
+    if (!stage || !dots) return;
+    stage.addEventListener("scroll", () => {
+      if (!stage.clientWidth) return;
+      const idx = Math.round(stage.scrollLeft / stage.clientWidth);
+      [...dots.children].forEach((d,i) => d.classList.toggle("active", i === idx));
+    }, { passive: true });
+    dots.addEventListener("click", (e) => {
+      const btn = e.target.closest(".p-dot");
+      if (!btn) return;
+      e.stopPropagation();
+      const i = parseInt(btn.dataset.plantIdx, 10) || 0;
+      stage.scrollTo({ left: i * stage.clientWidth, behavior: "smooth" });
+    });
   }
 
   let lastAckText = null;
@@ -1491,6 +1531,9 @@
   function setConn(connected) {
     document.getElementById("conn-bar").classList.toggle("disconnected", !connected);
   }
+
+  // ---------- plants swipe wiring ----------
+  wirePlantSwipe();
 
   // ---------- burn-in: dim + drift after 5min idle ----------
   let idleTimer=null;
