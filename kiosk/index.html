@@ -1585,24 +1585,8 @@
     const endTouch = () => { if (gestureSrc === "touch") endDrag(null); };
     stage.addEventListener("touchend", endTouch);
     stage.addEventListener("touchcancel", endTouch);
-
-    // Auto-rotate the plant carousel every 10 s. Any manual interaction
-    // (drag, dot tap) pauses the rotation for 20 s, then it resumes.
-    let pauseUntil = 0;
-    const bumpPause = () => { pauseUntil = Date.now() + 20000; };
-    stage.addEventListener("pointerdown", bumpPause);
-    stage.addEventListener("touchstart", bumpPause, { passive: true });
-    dots.addEventListener("click", bumpPause, true);
-    setInterval(() => {
-      if (!stage.clientWidth) return;
-      if (Date.now() < pauseUntil) return;
-      // Skip rotation when the plants face isn't even visible.
-      if (!document.getElementById("plants").classList.contains("active")) return;
-      const w = stage.clientWidth;
-      const cur = Math.round(stage.scrollLeft / w);
-      const next = (cur + 1) % stage.children.length;
-      stage.scrollTo({ left: next * w, behavior: "smooth" });
-    }, 10000);
+    // Auto-rotation removed — the sideways motion was disorienting. Use the
+    // dot rail or swipe to navigate plants manually.
   }
 
   let lastAckText = null;
