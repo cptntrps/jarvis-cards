@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Floorplan Tracer</title>
+<style>
+  :root { --bg:#1a1a1a; --ink:#f5f5f5; --muted:#8a8378; --accent:#C75A3D; --hairline:rgba(255,255,255,.18); }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--ink);
+    font-family:"Helvetica Neue",Helvetica,Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+  .app { display:grid; grid-template-columns: 1fr 320px; height:100vh; }
+  .stage { position:relative; overflow:hidden; background:#0a0a0a; }
+  .stage svg { position:absolute; inset:0; width:100%; height:100%; cursor:crosshair; }
+  .panel {
+    border-left:1px solid var(--hairline); padding:18px; display:flex; flex-direction:column; gap:14px;
+    overflow-y:auto; background:#111;
+  }
+  h1 { font-size:13px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); margin:0 0 4px; font-weight:500; }
+  .help { font-size:12px; line-height:1.5; color:var(--muted); }
+  .help kbd { background:#222; border:1px solid var(--hairline); border-radius:3px; padding:1px 5px; font-size:11px; color:var(--ink); font-family:ui-monospace,monospace;}
+  .row { display:flex; gap:8px; align-items:center; }
+  input[type=text] {
+    flex:1; background:#0a0a0a; border:1px solid var(--hairline); color:var(--ink);
+    padding:8px 10px; border-radius:4px; font:13px/1 inherit; outline:none;
+  }
+  input[type=text]:focus { border-color: var(--accent); }
+  button {
+    background:#222; color:var(--ink); border:1px solid var(--hairline); padding:8px 12px;
+    border-radius:4px; font:12px/1 inherit; letter-spacing:.04em; cursor:pointer;
+  }
+  button:hover { background:#2a2a2a; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.ghost { background:transparent; }
+  .rooms { display:flex; flex-direction:column; gap:6px; }
+  .room {
+    display:flex; align-items:center; gap:8px; padding:8px 10px;
+    background:#0a0a0a; border:1px solid var(--hairline); border-radius:4px; font-size:13px;
+  }
+  .room.active { border-color: var(--accent); }
+  .room .swatch { width:12px; height:12px; border-radius:2px; flex-shrink:0; }
+  .room .name { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .room .pts { color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+  .room .x { background:transparent; border:0; color:var(--muted); padding:2px 6px; cursor:pointer; }
+  .room .x:hover { color:var(--accent); }
+  textarea { width:100%; min-height:120px; background:#0a0a0a; color:var(--ink);
+    border:1px solid var(--hairline); border-radius:4px; padding:8px; font:11px/1.4 ui-monospace,monospace; resize:vertical; }
+  .vert-actions { display:flex; gap:6px; flex-wrap:wrap; }
+  .pt {
+    fill:#fff; stroke:#000; stroke-width:1; cursor:grab;
+  }
+  .pt:active { cursor:grabbing; }
+  .pt.first { fill: var(--accent); }
+  .poly { fill-opacity:.18; stroke-width:2; stroke-linejoin:round; }
+  .poly.draft { stroke-dasharray:4 4; fill-opacity:.08; }
+  .label-text { fill:#fff; font-size:14px; font-weight:600; pointer-events:none; paint-order:stroke; stroke:#000; stroke-width:3; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="stage" id="stage">
+    <svg id="svg" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+  <aside class="panel">
+    <div>
+      <h1>Tracer</h1>
+      <div class="help">
+        Click on the floorplan to drop polygon points.
+        <br/><br/>
+        <kbd>Enter</kbd> close room ·
+        <kbd>Esc</kbd> cancel ·
+        <kbd>Z</kbd> undo last point
+        <br/><br/>
+        After closing, drag any point to nudge. Coordinates are normalized 0–1, so the room shapes scale with whatever floorplan size you use.
+      </div>
+    </div>
+    <div class="row">
+      <input id="room-name" type="text" placeholder="Room name (e.g. Kitchen)" />
+    </div>
+    <div class="vert-actions">
+      <button id="finish" class="primary">Close room ⏎</button>
+      <button id="undo">Undo Z</button>
+      <button id="cancel" class="ghost">Cancel ⎋</button>
+    </div>
+    <div>
+      <h1>Rooms</h1>
+      <div class="rooms" id="rooms"></div>
+    </div>
+    <div>
+      <h1>Export</h1>
+      <textarea id="export" readonly></textarea>
+      <div class="vert-actions" style="margin-top:8px;">
+        <button id="copy">Copy JSON</button>
+        <button id="clear" class="ghost">Clear all</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+(() => {
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const svg = document.getElementById("svg");
+  const stage = document.getElementById("stage");
+  const roomsEl = document.getElementById("rooms");
+  const exportEl = document.getElementById("export");
+  const nameInput = document.getElementById("room-name");
+
+  // Floorplan image — loaded inside SVG so coords are in image-space.
+  const IMG = "floorplan.jpeg";
+  const IMG_W = 1320, IMG_H = 1744;
+  svg.setAttribute("viewBox", `0 0 ${IMG_W} ${IMG_H}`);
+  const img = document.createElementNS(SVG_NS, "image");
+  img.setAttributeNS("http://www.w3.org/1999/xlink", "href", IMG);
+  img.setAttribute("href", IMG);
+  img.setAttribute("x", 0); img.setAttribute("y", 0);
+  img.setAttribute("width", IMG_W); img.setAttribute("height", IMG_H);
+  svg.appendChild(img);
+
+  // State
+  const PALETTE = ["#C75A3D","#3D8AC7","#5DAA5D","#C7A33D","#9B5DC7","#3DC7B5","#E07AB1","#7A95E0"];
+  let rooms = JSON.parse(localStorage.getItem("tracer:rooms") || "[]");
+  let draftPts = []; // image-space coords
+
+  function persist() {
+    localStorage.setItem("tracer:rooms", JSON.stringify(rooms));
+    refreshExport();
+  }
+
+  function colorFor(i) { return PALETTE[i % PALETTE.length]; }
+
+  function imgCoordsFromEvent(e) {
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    const ctm = svg.getScreenCTM().inverse();
+    const p = pt.matrixTransform(ctm);
+    return { x: Math.round(p.x), y: Math.round(p.y) };
+  }
+
+  // Draw layer (rebuilt each render)
+  let layer = document.createElementNS(SVG_NS, "g");
+  svg.appendChild(layer);
+
+  function render() {
+    layer.remove();
+    layer = document.createElementNS(SVG_NS, "g");
+    svg.appendChild(layer);
+
+    // Existing rooms
+    rooms.forEach((r, idx) => {
+      const color = colorFor(idx);
+      const poly = document.createElementNS(SVG_NS, "polygon");
+      poly.setAttribute("points", r.points.map(p => `${p.x},${p.y}`).join(" "));
+      poly.setAttribute("class", "poly");
+      poly.setAttribute("fill", color);
+      poly.setAttribute("stroke", color);
+      layer.appendChild(poly);
+
+      // Label at centroid
+      const cx = r.points.reduce((s,p)=>s+p.x,0)/r.points.length;
+      const cy = r.points.reduce((s,p)=>s+p.y,0)/r.points.length;
+      const label = document.createElementNS(SVG_NS, "text");
+      label.setAttribute("x", cx); label.setAttribute("y", cy);
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("dominant-baseline", "middle");
+      label.setAttribute("class", "label-text");
+      label.textContent = r.name;
+      layer.appendChild(label);
+
+      // Draggable point handles
+      r.points.forEach((p, pi) => {
+        const dot = document.createElementNS(SVG_NS, "circle");
+        dot.setAttribute("cx", p.x); dot.setAttribute("cy", p.y);
+        dot.setAttribute("r", 7);
+        dot.setAttribute("class", "pt");
+        dot.setAttribute("fill", color);
+        dot.addEventListener("pointerdown", (e) => startDrag(e, idx, pi));
+        layer.appendChild(dot);
+      });
+    });
+
+    // Draft polygon
+    if (draftPts.length) {
+      const color = colorFor(rooms.length);
+      if (draftPts.length >= 2) {
+        const draftPoly = document.createElementNS(SVG_NS, "polygon");
+        draftPoly.setAttribute("points", draftPts.map(p => `${p.x},${p.y}`).join(" "));
+        draftPoly.setAttribute("class", "poly draft");
+        draftPoly.setAttribute("fill", color);
+        draftPoly.setAttribute("stroke", color);
+        layer.appendChild(draftPoly);
+      }
+      draftPts.forEach((p, i) => {
+        const dot = document.createElementNS(SVG_NS, "circle");
+        dot.setAttribute("cx", p.x); dot.setAttribute("cy", p.y);
+        dot.setAttribute("r", 7);
+        dot.setAttribute("class", "pt" + (i === 0 ? " first" : ""));
+        dot.setAttribute("fill", "#fff");
+        layer.appendChild(dot);
+      });
+    }
+
+    // List
+    roomsEl.innerHTML = "";
+    rooms.forEach((r, idx) => {
+      const row = document.createElement("div");
+      row.className = "room";
+      row.innerHTML = `
+        <span class="swatch" style="background:${colorFor(idx)}"></span>
+        <span class="name">${r.name}</span>
+        <span class="pts">${r.points.length} pts</span>
+        <button class="x" title="Delete">×</button>`;
+      row.querySelector(".x").addEventListener("click", () => {
+        rooms.splice(idx, 1); persist(); render();
+      });
+      roomsEl.appendChild(row);
+    });
+  }
+
+  function refreshExport() {
+    // Output normalized coords (0..1) so they survive image resizing
+    const out = rooms.map(r => ({
+      name: r.name,
+      points: r.points.map(p => [+(p.x / IMG_W).toFixed(4), +(p.y / IMG_H).toFixed(4)])
+    }));
+    exportEl.value = JSON.stringify(out, null, 2);
+  }
+
+  // Add point on stage tap (pointerdown/up that didn't move and didn't start on a handle)
+  let pendingAdd = null;
+  svg.addEventListener("pointerdown", (e) => {
+    if (e.target.classList && e.target.classList.contains("pt")) return;
+    pendingAdd = { x: e.clientX, y: e.clientY };
+  });
+  svg.addEventListener("pointerup", (e) => {
+    if (!pendingAdd) return;
+    const moved = Math.hypot(e.clientX - pendingAdd.x, e.clientY - pendingAdd.y) > 4;
+    const startedClean = !!pendingAdd;
+    pendingAdd = null;
+    if (moved || !startedClean) return;
+    if (e.target.classList && e.target.classList.contains("pt")) return;
+    const c = imgCoordsFromEvent(e);
+    draftPts.push(c);
+    render();
+  });
+
+  // Drag handles
+  let dragging = null;
+  function startDrag(e, ri, pi) {
+    e.stopPropagation(); e.preventDefault();
+    pendingAdd = null; // ensure svg pointerup doesn't add a point
+    dragging = { ri, pi };
+    try { e.target.setPointerCapture(e.pointerId); } catch {}
+    const move = (ev) => {
+      if (!dragging) return;
+      const c = imgCoordsFromEvent(ev);
+      rooms[dragging.ri].points[dragging.pi] = c;
+      render();
+    };
+    const up = () => {
+      dragging = null;
+      pendingAdd = null;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      persist();
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  }
+
+  // Finish room
+  function finish() {
+    if (draftPts.length < 3) return;
+    const name = (nameInput.value || `Room ${rooms.length + 1}`).trim();
+    rooms.push({ name, points: draftPts.slice() });
+    draftPts = [];
+    nameInput.value = "";
+    persist(); render();
+  }
+  function undo() { draftPts.pop(); render(); }
+  function cancel() { draftPts = []; render(); }
+
+  document.getElementById("finish").addEventListener("click", finish);
+  document.getElementById("undo").addEventListener("click", undo);
+  document.getElementById("cancel").addEventListener("click", cancel);
+  document.getElementById("copy").addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(exportEl.value); } catch {}
+    exportEl.select();
+  });
+  document.getElementById("clear").addEventListener("click", () => {
+    if (!confirm("Clear all rooms?")) return;
+    rooms = []; draftPts = []; persist(); render();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (document.activeElement === nameInput) {
+      if (e.key === "Enter") { e.preventDefault(); finish(); }
+      return;
+    }
+    if (e.key === "Enter") finish();
+    else if (e.key === "Escape") cancel();
+    else if (e.key.toLowerCase() === "z") undo();
+  });
+
+  render();
+  refreshExport();
+})();
+</script>
+</body>
+</html>

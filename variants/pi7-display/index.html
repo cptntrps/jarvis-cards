@@ -64,6 +64,41 @@
   .stroke-secondary { stroke: var(--secondary); }
   .stroke-accent { stroke: var(--accent); opacity: 0.6; }
 
+  /* ============ CONNECTION HAIRLINE ============ */
+  .conn-bar {
+    position: fixed; left: 0; right: 0; top: 0; height: 1px; z-index: 9999;
+    background: transparent; transition: background 400ms var(--ease);
+    pointer-events: none;
+  }
+  .conn-bar.disconnected { background: var(--accent); animation: connpulse 1.6s ease-in-out infinite; }
+  @keyframes connpulse { 0%,100% { opacity: 0.35; } 50% { opacity: 0.9; } }
+
+  /* ============ BURN-IN: idle drift + dim ============ */
+  body.idle-dim { transition: opacity 4s var(--ease); }
+  body.idle-dim .face.active { animation: drift 90s ease-in-out infinite; }
+  @keyframes drift {
+    0%,100% { transform: translate(0,0); }
+    25%     { transform: translate(6px,-4px); }
+    50%     { transform: translate(-4px,6px); }
+    75%     { transform: translate(-6px,-3px); }
+  }
+  body.idle-dim #home .time, body.idle-dim #home .date { opacity: 0.7; }
+
+  /* ============ PER-FACE MOOD ============ */
+  body.face-listening { background: #0A0A0A; color: #F5F5F5; }
+  body.face-listening { --secondary: #5A5A5A; --accent: #C75A3D; --hairline: rgba(245,245,245,0.18); }
+  body.face-ack       { background: #0E0E10; color: #F5F5F5; --secondary: #6A6A6A; --hairline: rgba(245,245,245,0.18); }
+  body.face-commute   { --accent: #2B6CB0; }
+  #grocery .g-row { will-change: transform; touch-action: pan-y; }
+  #grocery .g-row.swiping { transition: none !important; }
+  #grocery .g-row.dismissing { transition: transform 350ms var(--ease), opacity 350ms var(--ease); }
+  /* Paused mode: tap stage to stop the roll and scroll manually */
+  #grocery .g-stage.paused { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  #grocery .g-stage.paused .g-roll { position: static; top: auto; transform: none !important; animation: none !important; padding: clamp(48px,8vh,80px) 0; }
+  #grocery .g-stage.paused .g-fade-top, #grocery .g-stage.paused .g-fade-bot { opacity: 0; }
+  #grocery .g-hint { position: absolute; right: clamp(32px,4vh,48px); top: clamp(32px,4vh,48px); font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--secondary); opacity: 0; transition: opacity 300ms var(--ease); pointer-events: none; }
+  #grocery .g-stage.paused ~ .g-hint, #grocery:hover .g-hint { opacity: 1; }
+
   /* ============ HOME (at-rest) ============ */
   #home .clock-hero {
     position: absolute; left:50%; top:50%; transform: translate(-50%,-50%);
@@ -93,9 +128,10 @@
   /* ============ WEATHER ============ */
   #weather .grid {
     position: absolute; inset: clamp(32px,4vh,48px);
-    display: grid; grid-template-columns: 1fr 1fr;
+    bottom: clamp(110px,16vh,140px);
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
     grid-template-rows: 1fr;
-    align-items: center;
+    align-items: center; gap: clamp(16px,3vw,32px);
   }
   #weather .hero { z-index: 2; }
   .temperature {
@@ -245,6 +281,104 @@
   }
   #grocery .g-fade-top { top: 0; background: linear-gradient(to bottom, var(--bg) 0%, rgba(0,0,0,0) 100%); }
   #grocery .g-fade-bot { bottom: 0; background: linear-gradient(to top, var(--bg) 0%, rgba(0,0,0,0) 100%); }
+
+  /* ============ FLOORPLAN ============ */
+  #floorplan .fp-stage {
+    position: absolute; inset: clamp(32px,4vh,48px);
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: clamp(20px,3vw,40px); align-items: center;
+  }
+  #floorplan .fp-canvas {
+    position: relative; height: 100%; max-height: 70vh;
+    aspect-ratio: 1320 / 1744;
+    justify-self: end;
+  }
+  #floorplan .fp-canvas img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: contain; opacity: 1;
+  }
+  html[data-theme="dark"] #floorplan .fp-canvas img,
+  body.face-floorplan #floorplan .fp-canvas img { opacity: 0.85; filter: invert(1) hue-rotate(180deg); }
+  #floorplan .fp-svg {
+    position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible;
+  }
+  #floorplan .fp-room {
+    fill: transparent; stroke: var(--hairline); stroke-width: 1.2;
+    cursor: pointer; transition: fill 600ms var(--ease), stroke 200ms var(--ease);
+    vector-effect: non-scaling-stroke;
+  }
+  #floorplan .fp-room.lit { fill: rgba(232, 168, 92, 0.32); stroke: rgba(232, 168, 92, 0.7); }
+  #floorplan .fp-room.active { stroke: var(--ink); stroke-width: 2; }
+  #floorplan .fp-room.door-open { stroke: var(--accent); stroke-width: 2; }
+  #floorplan .fp-motion {
+    fill: var(--ink); opacity: 0; transform-box: fill-box; transform-origin: center;
+    animation: fpPulse 2.4s ease-in-out infinite;
+  }
+  @keyframes fpPulse {
+    0%,100% { opacity: 0; transform: scale(0.6); }
+    50%     { opacity: 0.55; transform: scale(1.4); }
+  }
+  #floorplan .fp-label {
+    fill: var(--secondary); font-size: 38px; font-weight: 400;
+    letter-spacing: 4px; text-transform: uppercase; pointer-events: none;
+    transition: fill 200ms var(--ease);
+  }
+  #floorplan .fp-room.lit + .fp-label, #floorplan .fp-label.lit { fill: var(--ink); }
+  #floorplan .fp-temp {
+    fill: var(--secondary); font-size: 30px; font-weight: 300;
+    font-variant-numeric: tabular-nums; pointer-events: none;
+  }
+
+  #floorplan .fp-side {
+    align-self: stretch; padding: clamp(8px,2vh,16px) 0;
+    display: flex; flex-direction: column; gap: clamp(20px,3vh,32px);
+    justify-content: center;
+  }
+  #floorplan .fp-side .lead-label {
+    font-size: 13px; letter-spacing: 0.32em; text-transform: uppercase; color: var(--secondary);
+  }
+  #floorplan .fp-side .lead-room {
+    font-size: clamp(36px, 5.4vw, 64px); font-weight: 200; line-height: 1; letter-spacing: -0.02em;
+    margin-top: 8px;
+  }
+  #floorplan .fp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(14px,2vh,22px); }
+  #floorplan .fp-stat .k { font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--secondary); }
+  #floorplan .fp-stat .v {
+    font-size: clamp(22px, 2.8vw, 30px); font-weight: 300; letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums; margin-top: 4px;
+  }
+  #floorplan .fp-stat .v .u { font-size: 0.55em; color: var(--secondary); margin-left: 0.25em; }
+  #floorplan .fp-stat .v.muted { color: var(--secondary); }
+  #floorplan .fp-light {
+    border-top: 1px solid var(--hairline); padding-top: clamp(12px,2vh,18px);
+    display: flex; flex-direction: column; gap: clamp(10px,1.5vh,14px);
+  }
+  #floorplan .fp-light .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  #floorplan .fp-light .k { font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--secondary); }
+  #floorplan .fp-light .toggle {
+    appearance: none; border: 1px solid var(--hairline); background: transparent;
+    color: var(--ink); padding: 8px 18px; font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase;
+    cursor: pointer; transition: background 160ms var(--ease), color 160ms var(--ease), border-color 160ms var(--ease);
+    font-family: inherit;
+  }
+  #floorplan .fp-light .toggle.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  #floorplan .fp-light .toggle:active { transform: scale(0.97); }
+  #floorplan .fp-light .slider-row { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; }
+  #floorplan .fp-light input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 2px;
+    background: var(--hairline); outline: none; border-radius: 999px;
+  }
+  #floorplan .fp-light input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--ink); cursor: pointer; border: 0;
+  }
+  #floorplan .fp-light input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%; background: var(--ink); cursor: pointer; border: 0;
+  }
+  #floorplan .fp-light .pct { font-variant-numeric: tabular-nums; font-size: 14px; color: var(--secondary); min-width: 3em; text-align: right; }
+  #floorplan .fp-light.disabled { opacity: 0.5; pointer-events: none; }
+  #floorplan .fp-light .slider-row.disabled { opacity: 0.4; pointer-events: none; }
+  #floorplan .fp-empty { color: var(--secondary); font-size: 13px; letter-spacing: 0.06em; }
   #grocery .g-counter {
     position: absolute; left: 50%; bottom: clamp(32px,4vh,48px);
     transform: translateX(-50%);
@@ -255,9 +389,12 @@
   #ack .ack-stage {
     position: absolute; left: clamp(32px,4vh,48px); right: clamp(32px,4vh,48px);
     top: 50%; transform: translateY(-50%); text-align: left;
-    font-size: clamp(28px, 4.6vw, 60px);
-    font-weight: 200; line-height: 1.1; letter-spacing: -0.01em;
+    font-size: clamp(24px, 3.6vw, 52px);
+    font-weight: 200; line-height: 1.15; letter-spacing: -0.01em;
+    text-wrap: pretty; word-wrap: break-word;
+    max-height: 70vh; overflow: hidden;
   }
+  #ack .ack-stage.long { font-size: clamp(18px, 2.6vw, 36px); line-height: 1.25; }
   #ack .ack-char {
     display: inline-block; opacity: 0;
     transform: translateY(0.3em);
@@ -274,6 +411,7 @@
 </style>
 </head>
 <body>
+<div class="conn-bar" id="conn-bar"></div>
 
 <!-- ============ HOME ============ -->
 <section class="face" id="home">
@@ -391,10 +529,33 @@
   <div class="ack-stage" id="a-stage"></div>
 </section>
 
+<!-- ============ FLOORPLAN ============ -->
+<section class="face" id="floorplan">
+  <div class="eyebrow">Apartment</div>
+  <div class="index" id="fp-clock">—</div>
+  <div class="fp-stage">
+    <div class="fp-canvas">
+      <img src="floorplan.jpg" alt="" />
+      <svg class="fp-svg" viewBox="0 0 1320 1744" preserveAspectRatio="xMidYMid meet" id="fp-svg"></svg>
+    </div>
+    <aside class="fp-side">
+      <div>
+        <div class="lead-label">Selected</div>
+        <div class="lead-room" id="fp-active-room">—</div>
+      </div>
+      <div class="fp-stats" id="fp-stats"></div>
+      <div class="fp-light" id="fp-light"></div>
+    </aside>
+  </div>
+</section>
+
 <script>
 (() => {
-  const HA_URL = "ws://192.168.50.4:8123/api/websocket";
-  const HA_TOKEN = "__HA_TOKEN__";
+  // DEMO=true seeds fixtures + auto-rotates faces every 6s. Set false for live HA.
+  const DEMO = !location.search.includes("live=1");
+  const HA_URL = "ws://__HA_HOST__:8123/api/websocket";
+  // Token can be overridden via localStorage.setItem('ha_token','...') so source stays clean.
+  const HA_TOKEN = (typeof localStorage!=="undefined" && localStorage.getItem("ha_token")) || "__HA_TOKEN__";
   const ENTITIES = [
     "input_select.jarvis_card",
     "weather.forecast_home",
@@ -449,9 +610,25 @@
       arc.appendChild(svgEl("path", { d:"M 40 130 Q 100 110 170 130", class: "stroke stroke-secondary" }));
       svg.appendChild(arc);
     } else if (s === "cloudy") {
-      drawCircle("stroke stroke-secondary");
-      const a1 = svgEl("g", { class: "arc-1" }); a1.appendChild(svgEl("path", { d:"M 10 100 Q 100 80 200 100", class: "stroke" })); svg.appendChild(a1);
-      const a2 = svgEl("g", { class: "arc-2" }); a2.appendChild(svgEl("path", { d:"M 10 140 Q 100 124 200 140", class: "stroke stroke-secondary" })); svg.appendChild(a2);
+      // Fluffy clouds: overlapping filled circles, two layers drifting
+      const cloud = (circles, opacity) => {
+        const g = svgEl("g");
+        circles.forEach(([cx,cy,r]) => g.appendChild(svgEl("circle",{
+          cx, cy, r, fill: "currentColor", stroke: "none", "fill-opacity": opacity
+        })));
+        return g;
+      };
+      // Back cloud — smaller, higher, faded
+      const back = svgEl("g", { class: "arc-2" });
+      back.appendChild(cloud([[62,78,14],[80,68,18],[100,70,17],[118,78,13],[80,84,10],[100,84,10]], 0.22));
+      svg.appendChild(back);
+      // Front cloud — larger, centered, opaque
+      const front = svgEl("g", { class: "arc-1" });
+      front.appendChild(cloud([
+        [55,128,18],[78,112,24],[106,110,24],[132,118,22],[152,128,17],
+        [78,134,16],[106,136,16],[132,136,14],[55,138,12],[152,138,11]
+      ], 0.92));
+      svg.appendChild(front);
     } else if (s === "rainy" || s === "pouring") {
       drawCircle();
       const xs=[40,70,100,130,160,55,85,115,145], ds=[0,-1,-2,-3,-4,-0.5,-1.5,-2.5,-3.5];
@@ -592,14 +769,15 @@
       eta.style.opacity = 1; dest.style.opacity = 1;
     }, 400);
   }
+  // Commute hero: alternate every 7s; pause 4s after manual tap.
+  let commutePauseUntil = 0;
   setInterval(()=>{
-    // only alternate when commute face is active
     const active = state["input_select.jarvis_card"]?.state || "home";
-    if (active === "commute") {
-      commuteHeroIdx++;
-      paintCommuteHero();
-    }
-  }, 4000);
+    if (active !== "commute") return;
+    if (Date.now() < commutePauseUntil) return;
+    commuteHeroIdx++;
+    paintCommuteHero();
+  }, 7000);
 
   function renderCommute() {
     $("c-clock").textContent = fmtClock();
@@ -617,6 +795,138 @@
 
   function renderListening() { $("l-clock").textContent = fmtClock(); }
 
+  // ---------- floorplan ----------
+  const ROOMS = [
+    { id: "bedroom2", label: "Bedroom 2",   poly: "160,230 160,676 510,676 510,251 490,272 385,272 385,232", motionAt: [340, 430], tempEntity: "sensor.temp_bedroom2" },
+    { id: "kitchen",  label: "Kitchen",     poly: "532,229 740,229 740,283 732,283 732,668 538,668", motionAt: [630, 540], tempEntity: "sensor.temp_kitchen" },
+    { id: "dining",   label: "Dining",      poly: "862,231 1146,231 1146,478 1108,478 1108,620 734,620 734,283 858,283", motionAt: [940, 430] },
+    { id: "bath2",    label: "Bath",        poly: "474,684 474,974 712,974 712,768 640,768 640,684", motionAt: [580, 880] },
+    { id: "living",   label: "Living Room", poly: "740,620 1086,620 1086,694 1146,694 1146,860 1108,860 1108,985 1146,985 1146,1090 740,1090", motionAt: [940, 940], tempEntity: "sensor.temp_living" },
+    { id: "hallway",  label: "Hall",        poly: "204,1106 204,872 346,872 346,684 472,684 472,978 736,978 736,1106", motionAt: [560, 1040] },
+    { id: "bedroom1", label: "Bedroom 1",   poly: "580,1108 1020,1108 1020,1180 1146,1180 1146,1584 712,1584 712,1360 580,1360", motionAt: [940, 1440], tempEntity: "sensor.temp_bedroom1" },
+    { id: "bath1",    label: "Bath",        poly: "350,1408 428,1408 444,1360 696,1360 696,1572 350,1572", motionAt: [550, 1480] },
+    { id: "closet_gui", label: "Closet",    poly: "160,680 338,680 338,752 268,752 268,852 160,852" },
+    { id: "closet_ra",  label: "Closet",    poly: "354,1340 574,1340 574,1108 466,1108 466,1200 354,1200" },
+    { id: "wd",         label: "W/D",       poly: "360,1108 444,1108 444,1192 360,1192" },
+  ];
+
+  let fpSelected = "living";
+
+  function buildFloorplan() {
+    const svg = $("fp-svg");
+    if (svg.dataset.built) return;
+    svg.innerHTML = "";
+    ROOMS.forEach(r => {
+      const poly = svgEl("polygon", { points: r.poly, class: "fp-room", "data-room": r.id });
+      fpSelected = r.id; renderFloorplan(); });
+      svg.appendChild(poly);
+      if (r.motionAt) {
+        const dot = svgEl("circle", { cx: r.motionAt[0], cy: r.motionAt[1], r: 14, class: "fp-motion", "data-room-motion": r.id });
+        dot.style.opacity = 0;
+        svg.appendChild(dot);
+      }
+    });
+    svg.dataset.built = "1";
+  }
+
+  const ROOMS_WITH_LIGHTS = new Set(["bedroom2","kitchen","dining","bath2","living","hallway","bedroom1","bath1"]);
+  if (typeof window.fpUserTouched === "undefined") window.fpUserTouched = new Set();
+
+  function callLightService(roomId, payload) {
+    const entity = "light."+roomId;
+    if (DEMO) {
+      if (payload.turn === "off") {
+        state[entity] = { state: "off", attributes: {} };
+      } else {
+        const cur = state[entity] || { state: "off", attributes: {} };
+        const bri = (payload.brightness != null) ? payload.brightness : (cur.attributes?.brightness ?? 200);
+        state[entity] = { state: "on", attributes: { brightness: bri } };
+      }
+      renderFloorplan();
+      return;
+    }
+    if (!ws || ws.readyState !== 1) return;
+    const service = payload.turn === "off" ? "turn_off" : "turn_on";
+    const data = { entity_id: entity };
+    if (service === "turn_on" && payload.brightness != null) data.brightness = payload.brightness;
+    ws.send(JSON.stringify({ id: msgId++, type: "call_service", domain: "light", service, service_data: data }));
+  }
+
+  function renderFloorplan() {
+    $("fp-clock").textContent = fmtClock();
+    buildFloorplan();
+    const svg = $("fp-svg");
+    ROOMS.forEach(r => {
+      const lightOn = state["light."+r.id]?.state === "on";
+      const motion  = state["binary_sensor.motion_"+r.id]?.state === "on";
+      const poly = svg.querySelector('.fp-room[data-room="'+r.id+'"]');
+      const dot  = svg.querySelector('[data-room-motion="'+r.id+'"]');
+      poly.classList.toggle("lit", lightOn);
+      poly.classList.toggle("active", fpSelected === r.id);
+      if (dot) dot.style.opacity = motion ? "" : "0";
+    });
+
+    const sel = ROOMS.find(r => r.id === fpSelected) || ROOMS[0];
+    $("fp-active-room").textContent = sel.label;
+
+    // Stats — only those the room actually has data for
+    const stats = [];
+    if (sel.tempEntity) {
+      const v = state[sel.tempEntity]?.state;
+      if (v != null) stats.push({ k: "Temp", v: Math.round(parseFloat(v)) + '<span class="u">°C</span>' });
+    }
+    const humEnt = "sensor.humidity_"+sel.id;
+    if (state[humEnt]) {
+      stats.push({ k: "Humidity", v: Math.round(parseFloat(state[humEnt].state)) + '<span class="u">%</span>' });
+    }
+    if (state["binary_sensor.motion_"+sel.id]) {
+      const m = state["binary_sensor.motion_"+sel.id].state === "on";
+      stats.push({ k: "Activity", v: m ? "Now" : "Quiet", muted: !m });
+    }
+    if (sel.id === "hallway" || sel.id === "living") {
+      const open = state["binary_sensor.door_front"]?.state === "on";
+      stats.push({ k: "Front Door", v: open ? "Open" : "Closed", muted: !open });
+    }
+    $("fp-stats").innerHTML = stats.length
+      ? stats.map(s => '<div class="fp-stat"><div class="k">'+s.k+'</div><div class="v'+(s.muted?' muted':'')+'">'+s.v+'</div></div>').join("")
+      : '<div class="fp-empty">No sensors in this room.</div>';
+
+    // Light controls
+    const lightHost = $("fp-light");
+    if (!ROOMS_WITH_LIGHTS.has(sel.id)) {
+      lightHost.innerHTML = '<div class="row"><span class="k">Light</span><span class="fp-empty">No fixtures</span></div>';
+      return;
+    }
+    const lightSt = state["light."+sel.id];
+    const on = lightSt?.state === "on";
+    const bri = on ? (lightSt?.attributes?.brightness ?? 200) : 0;
+    const pct = Math.round(bri / 255 * 100);
+    lightHost.innerHTML =
+      '<div class="row">' +
+        '<span class="k">Light</span>' +
+        '<button class="toggle '+(on?"on":"")+'" data-fp-toggle>'+(on?"On":"Off")+'</button>' +
+      '</div>' +
+      '<div class="slider-row '+(on?"":"disabled")+'">' +
+        '<span class="k">Bright</span>' +
+        '<input type="range" min="5" max="100" value="'+(on?pct:50)+'" data-fp-bri />' +
+        '<span class="pct" data-fp-pct>'+(on?pct:0)+'%</span>' +
+      '</div>';
+    const toggleBtn = lightHost.querySelector("[data-fp-toggle]");
+    const slider    = lightHost.querySelector("[data-fp-bri]");
+    const pctEl     = lightHost.querySelector("[data-fp-pct]");
+    toggleBtn.addEventListener("click", () => {
+      window.fpUserTouched.add(sel.id);
+      callLightService(sel.id, { turn: on ? "off" : "on" });
+    });
+    if (slider) {
+      slider.addEventListener("input", (e) => { pctEl.textContent = e.target.value + "%"; });
+      slider.addEventListener("change", (e) => {
+        const v = parseInt(e.target.value, 10);
+        window.fpUserTouched.add(sel.id);
+        callLightService(sel.id, { turn: "on", brightness: Math.round(v / 100 * 255) });
+      });
+    }
+  }
 
   function renderGrocery() {
     $("g-clock").textContent = fmtClock();
@@ -666,14 +976,21 @@
   }
 
   // ---------- face switcher ----------
+  const VALID_FACES = ["home","weather","commute","listening","ack","grocery","floorplan"];
   function showFace(name) {
-    const valid = ["home","weather","commute","listening","ack","grocery"];
-    if (!valid.includes(name)) name = "home";
+    if (!VALID_FACES.includes(name)) name = "home";
     document.querySelectorAll(".face").forEach(el => el.classList.toggle("active", el.id === name));
+    // Per-face mood class on body
+    VALID_FACES.forEach(f => document.body.classList.toggle("face-"+f, f===name));
+    // Mark ack as long if it overflows
+    if (name === "ack") {
+      const t = (state["input_text.jarvis_last_speech"]?.state || "");
+      $("a-stage").classList.toggle("long", t.length > 80);
+    }
   }
 
   function renderAll() {
-    renderHome(); renderWeather(); renderCommute(); renderListening(); renderAck(); renderGrocery();
+    renderHome(); renderWeather(); renderCommute(); renderListening(); renderAck(); renderGrocery(); renderFloorplan();
     const lockFace = new URLSearchParams(location.search).get("face");
     const active = lockFace || state["input_select.jarvis_card"]?.state || "home";
     showFace(active);
@@ -705,27 +1022,233 @@
         }
       }
     });
-    ws.addEventListener("close", scheduleReconnect);
-    ws.addEventListener("error", () => { try { ws.close(); } catch {} });
+    ws.addEventListener("open", () => setConn(true));
+    ws.addEventListener("close", () => { setConn(false); scheduleReconnect(); });
+    ws.addEventListener("error", () => { setConn(false); try { ws.close(); } catch {} });
   }
   function scheduleReconnect() {
     if (reconnectTimer) return;
     reconnectTimer = setTimeout(()=>{ reconnectTimer=null; connect(); }, 2000);
   }
 
+  // Tick clocks: 1s on home (active), 10s on auxiliary index clocks.
   setInterval(()=>{
-    // gentle 15s clock tick across all faces
     $("home-time").textContent = fmtClock();
     $("home-date").textContent = fmtDate();
+  }, 1000);
+  setInterval(()=>{
     $("w-clock").textContent = fmtClock();
     $("c-clock").textContent = fmtClock();
     $("l-clock").textContent = fmtClock();
-  }, 15000);
+    $("g-clock").textContent = fmtClock();
+    $("a-clock").textContent = fmtClock();
+  }, 10000);
 
-  // initial paint with placeholders
-  renderAll();
-  showFace("home");
-  connect();
+  // ---------- connection bar ----------
+  function setConn(connected) {
+    document.getElementById("conn-bar").classList.toggle("disconnected", !connected);
+  }
+
+  // ---------- burn-in: dim + drift after 5min idle ----------
+  let idleTimer=null;
+  function bumpIdle(){ document.body.classList.remove("idle-dim"); clearTimeout(idleTimer);
+    idleTimer = setTimeout(()=>document.body.classList.add("idle-dim"), 5*60*1000); }
+  document.addEventListener("pointerdown", bumpIdle);
+  bumpIdle();
+
+  // ---------- touch / tap handlers ----------
+  function flipCard(target) {
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({
+        id: msgId++, type: "call_service",
+        domain: "input_select", service: "select_option",
+        service_data: { entity_id: "input_select.jarvis_card", option: target }
+      }));
+    }
+  }
+  document.addEventListener("click", (e) => {
+    const flip = e.target.closest("[data-flip]");
+    if (flip) { flipCard(flip.dataset.flip); return; }
+    const face = e.target.closest(".face.active");
+    if (!face) return;
+    const dismiss = face.dataset.dismiss;
+    if (dismiss && !e.target.closest(".tappable, .g-row")) {
+      flipCard(dismiss);
+    }
+  });
+
+  // Commute hero: tap toggles which destination is hero
+  (() => {
+    const hero = document.querySelector("#commute .hero");
+    if (hero) {
+      hero.classList.add("tappable");
+      hero.addEventListener("click", (e) => {
+        e.stopPropagation();
+        commuteHeroIdx++;
+        commutePauseUntil = Date.now() + 4000;
+        paintCommuteHero();
+      });
+    }
+  })();
+
+  // ---------- grocery swipe-to-remove ----------
+  function callRemoveFromList(item) {
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({
+        id: msgId++, type: "call_service",
+        domain: "rest_command", service: "groceries_remove_from_list",
+        service_data: { item }
+      }));
+    }
+  }
+  (() => {
+    const stage = document.querySelector("#grocery .g-stage");
+    const roll = document.getElementById("g-roll");
+    if (!stage || !roll) return;
+
+    // Tap-to-pause: clicking the stage (without a row swipe) toggles manual scroll mode
+    let downX=0, downY=0, downOnRow=false;
+    stage.addEventListener("pointerdown", (e) => {
+      downX = e.clientX; downY = e.clientY;
+      downOnRow = !!e.target.closest(".g-row");
+    });
+    stage.addEventListener("pointerup", (e) => {
+      const dx = Math.abs(e.clientX - downX), dy = Math.abs(e.clientY - downY);
+      if (dx < 6 && dy < 6 && !downOnRow) {
+        stage.classList.toggle("paused");
+      }
+    });
+    const SWIPE_THRESHOLD_RATIO = 0.35;
+    let active = null, startX = 0, startY = 0, lockedAxis = null, resumeTimer = null;
+
+    const pauseRoll = () => { roll.style.animationPlayState = "paused"; clearTimeout(resumeTimer); };
+    const scheduleResume = () => {
+      clearTimeout(resumeTimer);
+      resumeTimer = setTimeout(() => { roll.style.animationPlayState = "running"; }, 3000);
+    };
+
+    stage.addEventListener("pointerdown", (e) => {
+      const row = e.target.closest(".g-row");
+      if (!row) return;
+      active = row; startX = e.clientX; startY = e.clientY; lockedAxis = null;
+      pauseRoll();
+      row.classList.add("swiping");
+      row.setPointerCapture && row.setPointerCapture(e.pointerId);
+    });
+    stage.addEventListener("pointermove", (e) => {
+      if (!active) return;
+      const dx = e.clientX - startX, dy = e.clientY - startY;
+      if (!lockedAxis && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+        lockedAxis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      }
+      if (lockedAxis === "x") {
+        const w = active.offsetWidth || stage.offsetWidth;
+        const ratio = Math.min(1, Math.abs(dx) / w);
+        active.style.transform = "translateX(" + dx + "px)";
+        active.style.opacity = String(1 - 0.6 * ratio);
+      }
+    });
+    stage.addEventListener("pointerup", (e) => {
+      if (!active) return;
+      const dx = e.clientX - startX;
+      const w = active.offsetWidth || stage.offsetWidth;
+      const past = Math.abs(dx) > w * SWIPE_THRESHOLD_RATIO && lockedAxis === "x";
+      const row = active; active = null;
+      row.classList.remove("swiping");
+      if (past) {
+        const dir = dx > 0 ? 1 : -1;
+        const itemName = row.querySelector(".name") ? row.querySelector(".name").textContent : "";
+        row.classList.add("dismissing");
+        row.style.transform = "translateX(" + (dir * w * 1.4) + "px)";
+        row.style.opacity = "0";
+        setTimeout(() => { if (itemName) callRemoveFromList(itemName); }, 350);
+      } else {
+        row.classList.add("dismissing");
+        row.style.transform = "";
+        row.style.opacity = "";
+        setTimeout(() => row.classList.remove("dismissing"), 350);
+      }
+      scheduleResume();
+    });
+    stage.addEventListener("pointercancel", () => {
+      if (active) {
+        active.classList.remove("swiping");
+        active.style.transform = ""; active.style.opacity = "";
+        active = null;
+      }
+      scheduleResume();
+    });
+  })();
+
+  // ---------- DEMO seed ----------
+  if (typeof fpUserTouched === "undefined") { window.fpUserTouched = new Set(); }
+  function seedDemo(faceIdx) {
+    const cycle = ["sunny","partlycloudy","cloudy","rainy","snowy","windy","clear-night"];
+    const w = cycle[faceIdx % cycle.length];
+    const temps = { sunny:24, partlycloudy:19, cloudy:14, rainy:11, snowy:-2, windy:16, "clear-night":9 };
+    state["weather.forecast_home"] = { state: w, attributes: {
+      temperature: temps[w], temperature_unit: "°C",
+      humidity: 30 + ((faceIdx*11)%55), wind_speed: 4 + ((faceIdx*7)%30), wind_speed_unit: "km/h"
+    }};
+    state["sensor.path_grove_st_to_wtc"] = { state: String(2 + (faceIdx%6)) };
+    state["sensor.path_grove_st_to_33rd"] = { state: String(4 + ((faceIdx+2)%7)) };
+    state["sensor.travel_time_28_liberty"] = { state: String(18 + (faceIdx%6)) };
+    state["sensor.travel_time_30_irving"] = { state: String(22 + ((faceIdx+1)%5)) };
+    state["input_text.jarvis_last_speech"] = { state: "Switching the kitchen lights to evening, lowering the thermostat to sixty-eight, and setting the dishwasher to run at ten." };
+    state["sensor.groceries_low"] = { state: "6", attributes: { items: [
+      { item: "Olive oil", status: "low" }, { item: "Coffee beans", status: "out" },
+      { item: "Eggs", status: "low" }, { item: "Sourdough", status: "out" },
+      { item: "Greek yogurt", status: "low" }, { item: "Lemons", status: "low" }
+    ]}};
+    // Floorplan demo: rotate which rooms are lit / motion / temp
+    const roomCycle = [
+      ["living","kitchen"], ["kitchen","dining"], ["living"], ["bedroom1","bath2"],
+      ["bedroom2"], ["hallway","living"], ["kitchen","dining","living"]
+    ];
+    const motionCycle = ["living","kitchen","living","bedroom1","bedroom2","hallway","kitchen"];
+    const lit = roomCycle[faceIdx % roomCycle.length];
+    const motion = motionCycle[faceIdx % motionCycle.length];
+    const setLight = (id, on, brightness=180) => {
+      state["light."+id] = { state: on ? "on" : "off", attributes: on ? { brightness } : {} };
+    };
+    ["bedroom2","kitchen","dining","bath1","living","hallway","bedroom1","bath2","closet_gui","closet_ra"].forEach(r => {
+      if (fpUserTouched.has(r)) return;
+      setLight(r, lit.includes(r), 120 + ((faceIdx*37)%135));
+    });
+    ["bedroom2","kitchen","dining","living","hallway","bedroom1","bath2"].forEach(r => {
+      state["binary_sensor.motion_"+r] = { state: r === motion ? "on" : "off" };
+    });
+    state["sensor.temp_living"]    = { state: String(21 + ((faceIdx)%3)) };
+    state["sensor.temp_bedroom1"]  = { state: String(20 + ((faceIdx+1)%3)) };
+    state["sensor.temp_bedroom2"]  = { state: String(20 + ((faceIdx+2)%3)) };
+    state["sensor.humidity_living"]   = { state: String(40 + ((faceIdx*3)%18)) };
+    state["sensor.humidity_bedroom1"] = { state: String(42 + ((faceIdx*5)%14)) };
+    state["sensor.humidity_bedroom2"] = { state: String(45 + ((faceIdx*7)%12)) };
+    state["sensor.humidity_kitchen"]  = { state: String(48 + ((faceIdx*4)%14)) };
+    state["sensor.humidity_bath1"]    = { state: String(58 + ((faceIdx*9)%24)) };
+    state["sensor.humidity_bath2"]    = { state: String(60 + ((faceIdx*11)%22)) };
+    state["sensor.temp_kitchen"]  = { state: String(22 + ((faceIdx)%2)), attributes: { unit_of_measurement: "°C" } };
+    state["binary_sensor.door_front"] = { state: faceIdx % 5 === 3 ? "on" : "off" };
+  }
+
+  if (DEMO) {
+    setConn(true);
+    let i = 0;
+    const faces = ["home","weather","commute","floorplan","grocery","listening","ack"];
+    const lockFace = new URLSearchParams(location.search).get("face") || "floorplan";
+    const tick = () => {
+      seedDemo(i);
+      state["input_select.jarvis_card"] = { state: lockFace };
+      renderAll();
+      i++;
+    };
+    tick();
+    setInterval(tick, 6000);
+  } else {
+    renderAll();
+    showFace("home");
+    connect();
+  }
 })();
 </script>
 </body>

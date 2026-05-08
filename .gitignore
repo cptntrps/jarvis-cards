@@ -4,6 +4,11 @@
 HA_TOKEN
 .env
 
+# User-supplied floor plan images (private)
+floorplan.jpg
+floorplan.jpeg
+floorplan.png
+
 # OS / editor noise
 .DS_Store
 *.swp
