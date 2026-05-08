@@ -511,6 +511,10 @@
     background-size: contain; background-repeat: no-repeat; background-position: center;
     margin-bottom: clamp(8px,1.2vh,14px);
   }
+  /* Invert the dark line art to white when the card sits on a dark background. */
+  html[data-theme="dark"] #plants .p-art,
+  body.face-listening #plants .p-art,
+  body.face-ack       #plants .p-art { filter: invert(1) hue-rotate(180deg); }
   #plants .p-divider { height: 1px; background: var(--ink); margin-bottom: clamp(10px,1.4vh,16px); }
   #plants .p-head {
     display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
