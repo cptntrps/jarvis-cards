@@ -495,6 +495,44 @@
   @media (prefers-reduced-motion: reduce) {
     *,*::before,*::after { animation: none !important; transition: none !important; }
   }
+
+  /* ---------- PLANTS ---------- */
+  #plants .p-stage {
+    position: absolute; left: clamp(40px,5vw,72px); right: clamp(40px,5vw,72px);
+    top: clamp(120px,16vh,160px); bottom: clamp(80px,10vh,120px);
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(16px,2vw,28px);
+  }
+  #plants .p-card {
+    position: relative; padding: clamp(20px,2.4vh,28px) clamp(18px,2vw,24px);
+    border-top: 1px solid var(--ink); display: flex; flex-direction: column;
+    justify-content: space-between; min-width: 0;
+  }
+  #plants .p-name { font-size: clamp(28px,4.6vh,42px); font-weight: 200; letter-spacing: -0.01em;
+    line-height: 1.0; }
+  #plants .p-species { font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--secondary); margin-top: 0.5em; }
+  #plants .p-hero { margin: clamp(14px,2vh,22px) 0; }
+  #plants .p-hero .v { font-size: clamp(40px,7vh,64px); font-weight: 200; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums; }
+  #plants .p-hero .u { font-size: 0.4em; color: var(--secondary); margin-left: 0.18em; }
+  #plants .p-hero .k { font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--secondary); margin-bottom: 0.4em; }
+  #plants .p-hero.dry .v { color: var(--accent); }
+  #plants .p-stats { display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: clamp(8px,1vh,14px) clamp(8px,1vw,16px); margin-bottom: clamp(10px,1.4vh,16px); }
+  #plants .p-stat .k { font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--secondary); }
+  #plants .p-stat .v { font-size: clamp(15px,2.2vh,20px); font-weight: 300;
+    font-variant-numeric: tabular-nums; margin-top: 0.2em; }
+  #plants .p-stat .v .u { font-size: 0.6em; color: var(--secondary); margin-left: 0.2em; }
+  #plants .p-stat .v.warn { color: var(--accent); }
+  #plants .p-foot { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--secondary); display: flex; justify-content: space-between; gap: 12px; }
+  #plants .p-foot .late { color: var(--accent); }
+  #plants .p-batt {
+    position: absolute; top: 0; left: 0; height: 2px; background: var(--accent);
+    width: 28%; opacity: 0.85;
+  }
 </style>
 </head>
 <body>
@@ -636,6 +674,13 @@
   </div>
 </section>
 
+<!-- ============ PLANTS ============ -->
+<section class="face" id="plants">
+  <div class="eyebrow">Plants</div>
+  <div class="index" id="p-clock">—</div>
+  <div class="p-stage" id="p-stage"></div>
+</section>
+
 <!-- ============ GLOBAL NAV + MODE TOGGLE ============ -->
 <nav class="nav-bar" id="nav-bar">
   <button class="nav-pill" data-flip="home"      data-nav-id="home">Home</button>
@@ -643,6 +688,7 @@
   <button class="nav-pill" data-flip="commute"   data-nav-id="commute">Commute</button>
   <button class="nav-pill" data-flip="grocery"   data-nav-id="grocery">Grocery</button>
   <button class="nav-pill" data-flip="floorplan" data-nav-id="map">Map</button>
+  <button class="nav-pill" data-flip="plants"    data-nav-id="plants">Plants</button>
   <button class="nav-pill" id="this-room-pill" data-flip="floorplan" style="display:none">This room</button>
 </nav>
 <button class="mode-toggle" id="mode-toggle" aria-label="Input mode">
@@ -688,6 +734,55 @@
     "binary_sensor.living_room_hvac_vibration",
     "binary_sensor.kitchen_presence", "binary_sensor.kitchen_motion_occupancy",
     "binary_sensor.hallway_presence",
+    // Plants — Audrey I, Audrey II, Vriesea (only living plants)
+    "sensor.audrey_i_moisture", "sensor.audrey_i_temperature", "sensor.audrey_i_illuminance",
+    "sensor.audrey_i_conductivity", "sensor.audrey_i_dli", "sensor.audrey_i_battery",
+    "sensor.audrey_i_last_watered", "sensor.audrey_i_last_fertilized",
+    "input_datetime.audrey_i_last_watered", "input_datetime.audrey_i_last_fertilized",
+    "sensor.audrey_ii_moisture", "sensor.audrey_ii_temperature", "sensor.audrey_ii_illuminance",
+    "sensor.audrey_ii_conductivity", "sensor.audrey_ii_dli", "sensor.audrey_ii_battery",
+    "sensor.audrey_ii_last_watered", "sensor.audrey_ii_last_fertilized",
+    "input_datetime.audrey_ii_last_watered", "input_datetime.audrey_ii_last_fertilized",
+    "sensor.vriesea_moisture", "sensor.vriesea_temperature", "sensor.vriesea_illuminance",
+    "sensor.vriesea_conductivity", "sensor.vriesea_dli", "sensor.bromelia_battery",
+    "sensor.vriesea_last_watered", "sensor.vriesea_last_fertilized",
+    "input_datetime.vriesea_last_watered", "input_datetime.vriesea_last_fertilized",
+  ];
+
+  // Plant config — only living plants (others excluded/dead).
+  // moistureMin: terracotta when actual moisture is below this.
+  // wateredMaxDays: footer turns terracotta when last-watered exceeds this.
+  const PLANTS = [
+    { id: "audrey_i",  name: "Audrey I",  species: "Snake Plant",
+      moistureEnt:  "sensor.audrey_i_moisture",
+      tempEnt:      "sensor.audrey_i_temperature",
+      lightEnt:     "sensor.audrey_i_illuminance",
+      dliEnt:       "sensor.audrey_i_dli",
+      ecEnt:        "sensor.audrey_i_conductivity",
+      battEnt:      "sensor.audrey_i_battery",
+      wateredDtEnt: "input_datetime.audrey_i_last_watered",
+      fedDtEnt:     "input_datetime.audrey_i_last_fertilized",
+      moistureMin: 15, wateredMaxDays: 28, fedMaxDays: 60 },
+    { id: "audrey_ii", name: "Audrey II", species: "Snake Plant",
+      moistureEnt:  "sensor.audrey_ii_moisture",
+      tempEnt:      "sensor.audrey_ii_temperature",
+      lightEnt:     "sensor.audrey_ii_illuminance",
+      dliEnt:       "sensor.audrey_ii_dli",
+      ecEnt:        "sensor.audrey_ii_conductivity",
+      battEnt:      "sensor.audrey_ii_battery",
+      wateredDtEnt: "input_datetime.audrey_ii_last_watered",
+      fedDtEnt:     "input_datetime.audrey_ii_last_fertilized",
+      moistureMin: 15, wateredMaxDays: 28, fedMaxDays: 60 },
+    { id: "vriesea",   name: "Vriesea",   species: "Tank Bromeliad",
+      moistureEnt:  "sensor.vriesea_moisture",
+      tempEnt:      "sensor.vriesea_temperature",
+      lightEnt:     "sensor.vriesea_illuminance",
+      dliEnt:       "sensor.vriesea_dli",
+      ecEnt:        "sensor.vriesea_conductivity",
+      battEnt:      "sensor.bromelia_battery",
+      wateredDtEnt: "input_datetime.vriesea_last_watered",
+      fedDtEnt:     "input_datetime.vriesea_last_fertilized",
+      moistureMin: 40, wateredMaxDays: 14, fedMaxDays: 35 },
   ];
   const state = {};
 
@@ -1138,6 +1233,72 @@
     return String(t).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
   }
 
+  // ---------- plants ----------
+  function daysSinceISO(iso) {
+    if (!iso) return null;
+    const t = Date.parse(iso);
+    if (!Number.isFinite(t)) return null;
+    return Math.max(0, Math.floor((Date.now() - t) / 86400000));
+  }
+  function renderPlants() {
+    $("p-clock").textContent = fmtClock();
+    const stage = $("p-stage");
+    const num = (eid) => {
+      const v = state[eid];
+      if (!v || v.state === "unavailable" || v.state === "unknown") return null;
+      const n = parseFloat(v.state);
+      return Number.isFinite(n) ? n : null;
+    };
+    const html = PLANTS.map(p => {
+      const moist = num(p.moistureEnt);
+      const temp  = num(p.tempEnt);
+      const light = num(p.lightEnt);
+      const dli   = num(p.dliEnt);
+      const ec    = num(p.ecEnt);
+      const batt  = num(p.battEnt);
+      const wDays = daysSinceISO(state[p.wateredDtEnt]?.state);
+      const fDays = daysSinceISO(state[p.fedDtEnt]?.state);
+      const dry   = moist != null && moist < p.moistureMin;
+      const wLate = wDays != null && wDays > p.wateredMaxDays;
+      const fLate = fDays != null && fDays > p.fedMaxDays;
+      const lowLight = dli != null && dli < 3;
+      const fmt = (v, u) => v == null ? '<span class="v">—</span>'
+        : '<span class="v">'+v+'<span class="u">'+u+'</span></span>';
+      const fmtWarn = (v, u, warn) => v == null ? '<span class="v">—</span>'
+        : '<span class="v'+(warn?' warn':'')+'">'+v+'<span class="u">'+u+'</span></span>';
+      const battBar = batt != null && batt < 20
+        ? '<div class="p-batt" style="width:'+Math.max(8, batt*1.4)+'%"></div>' : '';
+      const wTxt = wDays == null ? 'Watered —' : 'Watered '+wDays+'d ago';
+      const fTxt = fDays == null ? 'Fed —'     : 'Fed '+fDays+'d ago';
+      return '<div class="p-card" data-plant="'+p.id+'">'
+        + battBar
+        + '<div>'
+        +   '<div class="p-name">'+escapeHtml(p.name)+'</div>'
+        +   '<div class="p-species">'+escapeHtml(p.species)+'</div>'
+        + '</div>'
+        + '<div class="p-hero'+(dry?' dry':'')+'">'
+        +   '<div class="k">Moisture</div>'
+        +   (moist == null
+              ? '<span class="v">—</span>'
+              : '<span class="v">'+Math.round(moist)+'<span class="u">%</span></span>')
+        + '</div>'
+        + '<div class="p-stats">'
+        +   '<div class="p-stat"><div class="k">Temp</div>'+fmt(temp != null ? Math.round(temp*10)/10 : null, '°C')+'</div>'
+        +   '<div class="p-stat"><div class="k">DLI</div>'+fmtWarn(dli != null ? (Math.round(dli*10)/10) : null, '', lowLight)+'</div>'
+        +   '<div class="p-stat"><div class="k">EC</div>'+fmt(ec != null ? Math.round(ec) : null, '')+'</div>'
+        + '</div>'
+        + '<div class="p-foot">'
+        +   '<span class="'+(wLate?'late':'')+'">'+wTxt+'</span>'
+        +   '<span class="'+(fLate?'late':'')+'">'+fTxt+'</span>'
+        + '</div>'
+        + '</div>';
+    }).join("");
+    if (stage.dataset.signature !== html) {
+      stage.innerHTML = html;
+      stage.dataset.signature = html;
+    }
+  }
+
   let lastAckText = null;
   function renderAck(force) {
     $("a-clock").textContent = fmtClock();
@@ -1157,7 +1318,7 @@
   }
 
   // ---------- face switcher ----------
-  const VALID_FACES = ["home","weather","commute","listening","ack","grocery","floorplan"];
+  const VALID_FACES = ["home","weather","commute","listening","ack","grocery","floorplan","plants"];
   function showFace(name) {
     if (!VALID_FACES.includes(name)) name = "home";
     document.querySelectorAll(".face").forEach(el => el.classList.toggle("active", el.id === name));
@@ -1173,7 +1334,7 @@
   function renderAll() {
     renderHome(); renderWeather(); renderCommute(); renderListening(); renderAck(); renderGrocery();
     applyMode();
-    highlightNav(state["input_select.jarvis_card"]?.state || "home"); renderFloorplan();
+    highlightNav(state["input_select.jarvis_card"]?.state || "home"); renderFloorplan(); renderPlants();
     const lockFace = new URLSearchParams(location.search).get("face");
     const active = lockFace || state["input_select.jarvis_card"]?.state || "home";
     showFace(active);
@@ -1225,6 +1386,7 @@
     $("l-clock").textContent = fmtClock();
     $("g-clock").textContent = fmtClock();
     $("a-clock").textContent = fmtClock();
+    $("p-clock").textContent = fmtClock();
   }, 10000);
 
   // ---------- connection bar ----------
@@ -1467,7 +1629,10 @@
     const lit = roomCycle[faceIdx % roomCycle.length];
     const motion = motionCycle[faceIdx % motionCycle.length];
     const setLight = (id, on, brightness=180) => {
-      lightAgg(id) = { state: on ? "on" : "off", attributes: on ? { brightness } : {} };
+      const arr = ROOM_LIGHTS[id];
+      const list = Array.isArray(arr) ? arr : (arr ? [arr] : ["light." + id]);
+      const st = { state: on ? "on" : "off", attributes: on ? { brightness } : {} };
+      for (const e of list) state[e] = st;
     };
     ["bedroom2","kitchen","dining","bath1","living","hallway","bedroom1","bath2","closet_gui","closet_ra"].forEach(r => {
       if (fpUserTouched.has(r)) return;
@@ -1486,12 +1651,38 @@
     state["sensor.humidity_bath1"]    = { state: String(58 + ((faceIdx*9)%24)) };
     state["sensor.humidity_bath2"]    = { state: String(60 + ((faceIdx*11)%22)) };
     state["sensor.temp_kitchen"]  = { state: String(22 + ((faceIdx)%2)), attributes: { unit_of_measurement: "°C" } };
+    // Plants demo
+    const dShift = (days) => new Date(Date.now() - days*86400000).toISOString().slice(0,19);
+    state["sensor.audrey_i_moisture"]      = { state: String(14 + (faceIdx%6)) };
+    state["sensor.audrey_i_temperature"]   = { state: "22.6" };
+    state["sensor.audrey_i_illuminance"]   = { state: "527" };
+    state["sensor.audrey_i_dli"]           = { state: "6.5" };
+    state["sensor.audrey_i_conductivity"]  = { state: "120" };
+    state["sensor.audrey_i_battery"]       = { state: "8" };
+    state["input_datetime.audrey_i_last_watered"]    = { state: dShift(47) };
+    state["input_datetime.audrey_i_last_fertilized"] = { state: dShift(47) };
+    state["sensor.audrey_ii_moisture"]      = { state: String(24 + (faceIdx%5)) };
+    state["sensor.audrey_ii_temperature"]   = { state: "22.4" };
+    state["sensor.audrey_ii_illuminance"]   = { state: "164" };
+    state["sensor.audrey_ii_dli"]           = { state: "6.3" };
+    state["sensor.audrey_ii_conductivity"]  = { state: "202" };
+    state["sensor.audrey_ii_battery"]       = { state: "36" };
+    state["input_datetime.audrey_ii_last_watered"]    = { state: dShift(47) };
+    state["input_datetime.audrey_ii_last_fertilized"] = { state: dShift(47) };
+    state["sensor.vriesea_moisture"]      = { state: String(52 + (faceIdx%6)) };
+    state["sensor.vriesea_temperature"]   = { state: "22.8" };
+    state["sensor.vriesea_illuminance"]   = { state: "86" };
+    state["sensor.vriesea_dli"]           = { state: "0.4" };
+    state["sensor.vriesea_conductivity"]  = { state: "698" };
+    state["sensor.bromelia_battery"]      = { state: "100" };
+    state["input_datetime.vriesea_last_watered"]    = { state: dShift(25) };
+    state["input_datetime.vriesea_last_fertilized"] = { state: dShift(31) };
   }
 
   if (DEMO) {
     setConn(true);
     let i = 0;
-    const faces = ["home","weather","commute","floorplan","grocery","listening","ack"];
+    const faces = ["home","weather","commute","floorplan","plants","grocery","listening","ack"];
     const lockFace = new URLSearchParams(location.search).get("face") || "floorplan";
     const tick = () => {
       seedDemo(i);
