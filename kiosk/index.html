@@ -481,6 +481,17 @@
     0%   { opacity: 0; transform: translateY(0.5em); }
     100% { opacity: 1; transform: translateY(0); }
   }
+  /* ============ FORM: display (passive — no nav, no touch) ============ */
+  body[data-form="display"] .nav-bar,
+  body[data-form="display"] .mode-toggle,
+  body[data-form="display"] #home .home-nav { display: none !important; }
+  body[data-form="display"] .face,
+  body[data-form="display"] .tappable,
+  body[data-form="display"] #grocery .g-row,
+  body[data-form="display"] #floorplan .fp-room { pointer-events: none; cursor: default; }
+  body[data-form="display"] .meta .cell.tappable .value,
+  body[data-form="display"] #commute .hero.tappable .eta-num { border-bottom: none; }
+
   @media (prefers-reduced-motion: reduce) {
     *,*::before,*::after { animation: none !important; transition: none !important; }
   }
@@ -1277,6 +1288,8 @@
   const urlParams = new URLSearchParams(location.search);
   const HERE = urlParams.get("here");           // room id the device lives in
   const URL_MODE = urlParams.get("mode");        // optional: lock mode to "voice"|"touch"|"both"
+  const URL_FORM = urlParams.get("form");        // optional: "display" = passive (no nav, no touch)
+  if (URL_FORM === "display") document.body.dataset.form = "display";
   // Configure the "this room" nav pill from ?here=
   (() => {
     const pill = document.getElementById("this-room-pill");
