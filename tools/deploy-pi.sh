@@ -11,7 +11,7 @@ set -eu
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PI_HOST="${1:-192.168.50.4}"
 TOKEN_VAR="${2:-HA_TOKEN}"
-REMOTE_PATH="${3:-\$HOME/homeassistant/config/www/jarvis/index.html}"
+REMOTE_PATH="${3:-homeassistant/config/www/jarvis/index.html}"
 
 # Source HA_TOKEN from credentials file if not in env
 if [ -z "${!TOKEN_VAR:-}" ] && [ -f "$HOME/.credentials.env" ]; then
