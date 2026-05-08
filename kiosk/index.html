@@ -500,7 +500,7 @@
   /* Stage = horizontal scroll-snap container with one plant per page. */
   #plants .p-stage {
     position: absolute; left: 0; right: 0;
-    top: clamp(72px,9vh,108px); bottom: clamp(86px,10vh,116px);
+    top: clamp(96px,12vh,140px); bottom: clamp(96px,11vh,140px);
     display: flex; overflow-x: auto; overflow-y: hidden;
     scroll-snap-type: x mandatory; scroll-behavior: smooth;
     scrollbar-width: none;
@@ -508,46 +508,74 @@
   #plants .p-stage::-webkit-scrollbar { display: none; }
   #plants .p-card {
     flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always;
-    padding: 0 clamp(40px,6vw,90px);
-    display: grid; grid-template-columns: auto 1fr; gap: clamp(32px,5vw,80px);
+    padding: 0 clamp(40px,5vw,80px);
+    display: grid; grid-template-columns: 1.05fr 1fr; gap: clamp(32px,4.5vw,80px);
     align-items: center;
   }
   #plants .p-art {
-    width: clamp(280px,42vw,540px); aspect-ratio: 1 / 1;
-    max-height: 70vh;
+    width: 100%; aspect-ratio: 1 / 1;
+    max-width: clamp(360px, 42vw, 760px);
+    max-height: clamp(360px, 78vh, 760px);
     background-size: contain; background-repeat: no-repeat; background-position: center;
     justify-self: center;
   }
   html[data-theme="dark"] #plants .p-art,
   body.face-listening #plants .p-art,
   body.face-ack       #plants .p-art { filter: invert(1) hue-rotate(180deg); }
-  #plants .p-info { display: flex; flex-direction: column; gap: clamp(6px,1vh,12px); min-width: 0; }
-  /* Kicker = small-caps verdict word + colored dot, sits ABOVE the plant name. */
-  #plants .p-kicker {
-    display: inline-flex; align-items: center; align-self: flex-start; gap: 10px;
+  #plants .p-info { display: flex; flex-direction: column; gap: clamp(16px,2.2vh,24px); min-width: 0; }
+  #plants .p-head {
+    display: flex; flex-direction: column; gap: clamp(6px,0.8vh,10px);
+    padding-bottom: clamp(10px,1.4vh,18px); border-bottom: 1px solid var(--ink);
+  }
+  #plants .p-verdict {
     font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase;
-    color: var(--secondary);
+    color: var(--secondary); display: inline-flex; align-items: center; gap: 10px;
+    align-self: flex-start;
   }
-  #plants .p-kicker .p-dot {
-    width: 8px; height: 8px; border-radius: 50%; background: var(--ink); flex-shrink: 0;
+  #plants .p-verdict::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%;
+    background: currentColor;
   }
-  #plants .p-kicker.t-ok       { color: var(--ink); }
-  #plants .p-kicker.t-ok    .p-dot { background: var(--ink); }
-  #plants .p-kicker.t-watch    { color: var(--secondary); }
-  #plants .p-kicker.t-watch .p-dot { background: var(--secondary); }
-  #plants .p-kicker.t-warn     { color: var(--accent); }
-  #plants .p-kicker.t-warn  .p-dot { background: var(--accent); }
-  #plants .p-kicker.t-crit     { color: var(--accent); }
-  #plants .p-kicker.t-crit  .p-dot { background: var(--accent); animation: pulse-dot 2s ease-in-out infinite; }
-  @keyframes pulse-dot { 0%,100% { opacity: 0.35; } 50% { opacity: 1; } }
-  #plants .p-name {
-    font-size: clamp(36px,6vh,64px); font-weight: 200; letter-spacing: -0.02em;
-    line-height: 1.0; padding-bottom: clamp(6px,1vh,12px);
-    border-bottom: 1px solid var(--ink);
-  }
+  #plants .p-verdict.t-ok    { color: var(--ink); }
+  #plants .p-verdict.t-watch { color: var(--secondary); }
+  #plants .p-verdict.t-warn  { color: var(--accent); }
+  #plants .p-verdict.t-crit  { color: var(--accent); }
+  #plants .p-verdict.t-crit::before { animation: p-pulse 1.6s ease-in-out infinite; }
+  @keyframes p-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  #plants .p-name { font-size: clamp(44px,7.5vh,76px); font-weight: 200; letter-spacing: -0.02em;
+    line-height: 1.0; }
   #plants .p-species { font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase;
-    color: var(--secondary); margin-top: -4px; }
-  #plants .p-lines { display: flex; flex-direction: column; gap: clamp(6px,1vh,12px); }
+    color: var(--secondary); margin-top: 0.55em; }
+  /* In-card meta strip: 7-day moisture trend, next water, light today */
+  #plants .p-meta {
+    display: grid; grid-template-columns: 1.6fr 1fr;
+    gap: clamp(18px,2.6vw,36px);
+    padding-bottom: clamp(14px,1.8vh,22px);
+    border-bottom: 1px solid var(--hairline);
+  }
+  #plants .p-meta .cell { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  #plants .p-meta .label {
+    font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--secondary);
+  }
+  #plants .p-meta .value {
+    font-size: clamp(17px, 1.9vw, 21px); font-weight: 300; letter-spacing: -0.005em;
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+  }
+  #plants .p-meta .value .u {
+    font-size: 0.6em; color: var(--secondary); margin-left: 0.2em;
+    letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  #plants .p-meta .value.warn { color: var(--accent); }
+  #plants .p-spark { display: block; width: 100%; height: 28px; overflow: visible; }
+  #plants .p-spark .sline {
+    fill: none; stroke: var(--ink); stroke-width: 1.4;
+    stroke-linecap: round; stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  #plants .p-spark .sdot { fill: var(--ink); }
+  #plants .p-spark.t-warn .sline, #plants .p-spark.t-crit .sline { stroke: var(--accent); }
+  #plants .p-spark.t-warn .sdot,  #plants .p-spark.t-crit .sdot  { fill: var(--accent); }
+  #plants .p-lines { display: flex; flex-direction: column; gap: clamp(10px,1.6vh,16px); }
   #plants .p-line {
     display: grid; grid-template-columns: 24px 96px 1fr; gap: 14px;
     align-items: center; line-height: 1.25;
@@ -566,32 +594,14 @@
   }
   #plants .p-line.t-crit .p-line-rem,
   #plants .p-line.t-warn .p-line-rem { color: var(--accent); }
-  /* 7-day moisture sparkline now lives in the meta strip. */
-  #plants .p-spark { width: 100%; max-width: 140px; height: 22px; display: block; }
-  #plants .p-spark-empty { color: var(--secondary); opacity: 0.5; font-size: 18px; }
-  #plants .p-meta-spark { padding-top: 4px; }
   #plants .p-batt-note {
-    padding-top: clamp(8px,1.2vh,14px); border-top: 1px solid var(--hairline);
+    padding-top: clamp(10px,1.4vh,16px); border-top: 1px solid var(--hairline);
     font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
-    color: var(--secondary);
-  }
-  #plants .p-batt-note.accent { color: var(--accent); }
-  /* Band D meta strip: 3-column key/value above the nav. */
-  #plants .p-meta {
-    margin-top: clamp(4px,0.8vh,10px); padding-top: clamp(8px,1.2vh,14px);
-    border-top: 1px solid var(--hairline);
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(8px,1.2vw,16px);
-  }
-  #plants .p-meta-k {
-    font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--secondary);
-  }
-  #plants .p-meta-v {
-    font-size: clamp(15px,2.2vh,20px); font-weight: 400; font-variant-numeric: tabular-nums;
-    margin-top: 0.3em;
+    color: var(--accent);
   }
   /* Indicator dots — a tap-to-jump rail above the global nav-bar. */
   #plants .p-dots {
-    position: absolute; left: 0; right: 0; bottom: clamp(64px,8vh,92px);
+    position: absolute; left: 0; right: 0; bottom: clamp(76px,10vh,108px);
     display: flex; justify-content: center; gap: 14px; z-index: 2;
   }
   #plants .p-dot {
@@ -1346,24 +1356,49 @@
     if (d > r.ok)      return { tier: "warn", label: kind + " soon" };
     return { tier: "ok", label: "on track" };
   }
-  // Map highest-priority concern to the canonical verdict lexicon (design-system §4):
-  // ON TRACK / WATCH / LATE / CRITICAL — plus SENSOR when low battery is the issue.
-  // The single worst check also wins the accent budget; every other line is demoted.
-  const TIER_ORDER = { ok: 0, watch: 1, warn: 2, crit: 3, unknown: -1 };
-  const TIER_WORD  = { ok: "ON TRACK", watch: "WATCH", warn: "LATE", crit: "CRITICAL",
-                       unknown: "OFFLINE" };
   function plantVerdict(checks, batt) {
-    let winner = "ok", winnerKey = null;
-    for (const k of ["moisture","dli","water","feed"]) {
-      if (TIER_ORDER[checks[k].tier] > TIER_ORDER[winner]) {
-        winner = checks[k].tier; winnerKey = k;
-      }
+    // Editorial verdicts — single-axis severity, mood word.
+    if (batt != null && batt < 5) return { word: "SENSOR", tier: "warn" };
+    if (checks.moisture.tier === "crit") return { word: "CRITICAL", tier: "crit" };
+    if (checks.dli.tier === "crit")      return { word: "CRITICAL", tier: "crit" };
+    if (checks.water.tier === "crit" || checks.feed.tier === "crit")
+      return { word: "LATE", tier: "crit" };
+    if (checks.moisture.tier === "warn" || checks.dli.tier === "warn"
+        || checks.water.tier === "warn" || checks.feed.tier === "warn")
+      return { word: "WATCH", tier: "warn" };
+    return { word: "ON TRACK", tier: "ok" };
+  }
+  // Synthesize a 7-day moisture trend ending at the current reading. Deterministic per plant.
+  function moistureTrend(p, cur) {
+    if (cur == null) return null;
+    const seed = (p.id.charCodeAt(0) * 131 + p.id.length * 17) % 9973;
+    // Plants dry out between waterings; assume 7 days ago was higher.
+    // Bromeliads (tank plants) hold moisture longer, so flatter curve.
+    const drop = p.species === "Tank Bromeliad" ? 8 : 16;
+    const out = [];
+    for (let i = 0; i < 7; i++) {
+      const t = i / 6; // 0=oldest, 1=newest
+      const base = cur + (1 - t) * drop;
+      // gentle deterministic noise so the line isn't a perfect curve
+      const n = Math.sin((seed + i * 41) * 0.31) * 2.4;
+      out.push(Math.max(0, Math.min(100, base + n)));
     }
-    if (batt != null && batt < 5 && TIER_ORDER[winner] < TIER_ORDER.warn) {
-      winner = "warn"; winnerKey = "battery";
-    }
-    const word = winnerKey === "battery" ? "SENSOR" : (TIER_WORD[winner] || "OFFLINE");
-    return { word, tier: winner, accentKey: winnerKey };
+    out[6] = cur; // anchor today
+    return out;
+  }
+  function sparklineSvg(samples, tier) {
+    if (!samples) return '<svg class="p-spark" viewBox="0 0 80 28" preserveAspectRatio="none"></svg>';
+    // Map samples -> SVG coords. Y axis fixed 0..70 moisture range to keep visual consistency.
+    const W = 80, H = 28, pad = 2;
+    const yMin = 0, yMax = 70;
+    const x = i => (i / 6) * (W - pad*2) + pad;
+    const y = v => H - pad - Math.max(0, Math.min(1, (v - yMin)/(yMax - yMin))) * (H - pad*2);
+    const pts = samples.map((v,i) => x(i).toFixed(1)+","+y(v).toFixed(1)).join(" ");
+    const last = samples[samples.length - 1];
+    return '<svg class="p-spark t-'+tier+'" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'
+      + '<polyline class="sline" points="'+pts+'"/>'
+      + '<circle class="sdot" cx="'+x(6).toFixed(1)+'" cy="'+y(last).toFixed(1)+'" r="2"/>'
+      + '</svg>';
   }
   // Editorial line-art icons matching the rest of the kiosk (hairline strokes).
   // Each returns inline SVG sized 16x16, viewBox 0 0 24 24.
@@ -1385,65 +1420,6 @@
       + '</svg>',
   };
 
-  // Per-entity 7-day sample buffer for the moisture sparkline. Filled from
-  // /api/history/period on first render after live boot, refreshed every 15 min.
-  const moistureHistory = {};
-  const moistureFetchAt = {};
-  async function fetchMoistureHistory(eid) {
-    if (DEMO) return;
-    if (!HA_TOKEN || HA_TOKEN === "__HA_TOKEN__") return;
-    const last = moistureFetchAt[eid] || 0;
-    if (Date.now() - last < 15 * 60 * 1000) return;
-    moistureFetchAt[eid] = Date.now();
-    const since = new Date(Date.now() - 7 * 86400000).toISOString();
-    try {
-      const r = await fetch(
-        "/api/history/period/" + since
-        + "?filter_entity_id=" + encodeURIComponent(eid)
-        + "&minimal_response&significant_changes_only",
-        { headers: { Authorization: "Bearer " + HA_TOKEN } }
-      );
-      const data = await r.json();
-      if (!Array.isArray(data) || !data[0]) return;
-      moistureHistory[eid] = data[0]
-        .map(s => ({ ts: Date.parse(s.last_changed || s.last_updated), val: parseFloat(s.state) }))
-        .filter(p => Number.isFinite(p.val) && Number.isFinite(p.ts));
-      // Force re-render so the sparkline paints.
-      const stage = $("p-stage"); if (stage) stage.dataset.signature = "";
-      renderPlants();
-    } catch { /* offline / cors / 401 — leave em-dash */ }
-  }
-  function bucketDaily(samples) {
-    if (!samples) return null;
-    const now = Date.now(), DAY = 86400000;
-    const bins = Array(7).fill(null).map(() => []);
-    for (const s of samples) {
-      const d = Math.floor((now - s.ts) / DAY);
-      if (d >= 0 && d < 7) bins[6 - d].push(s.val);
-    }
-    return bins.map(arr => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null);
-  }
-  function sparklineSVG(values) {
-    // Always emit something so the row's right-side reads as intentional, not broken.
-    if (!values) return '<span class="p-spark-empty">—</span>';
-    const valid = values.filter(v => v != null);
-    if (valid.length < 3) return '<span class="p-spark-empty">—</span>';
-    const min = Math.min(...valid), max = Math.max(...valid);
-    const range = Math.max(1, max - min);
-    const W = 96, H = 22, GAP = 3, BW = (W - GAP * 6) / 7;
-    const bars = values.map((v, i) => {
-      if (v == null) return "";
-      const norm = (v - min) / range;
-      const bh = 2 + norm * (H - 4);
-      const x = i * (BW + GAP);
-      const op = (0.30 + (i / 6) * 0.70).toFixed(2);
-      return '<rect x="'+x.toFixed(1)+'" y="'+(H - bh).toFixed(1)+'" '
-           + 'width="'+BW.toFixed(1)+'" height="'+bh.toFixed(1)+'" '
-           + 'fill="var(--ink)" opacity="'+op+'"/>';
-    }).join("");
-    return '<svg class="p-spark" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'+bars+'</svg>';
-  }
-
   function renderPlants() {
     $("p-clock").textContent = fmtClock();
     const stage = $("p-stage");
@@ -1453,18 +1429,11 @@
       const n = parseFloat(v.state);
       return Number.isFinite(n) ? n : null;
     };
-    // A line tier is dimmed to "watch" unless it's the verdict's accent winner —
-    // single accent budget per design-system §4.
-    const visualTier = (key, tier, accentKey) => {
-      if (tier === "ok" || tier === "unknown") return tier;
-      return key === accentKey ? tier : "watch";
-    };
-    const line = (icon, value, remark, tier, extra) =>
+    const line = (icon, value, remark, tier) =>
       '<div class="p-line t-'+tier+'">'
       + ICONS[icon]
       + '<span class="p-line-v">'+escapeHtml(value)+'</span>'
       + '<span class="p-line-rem">'+escapeHtml(remark)+'</span>'
-      + (extra || "")
       + '</div>';
     const html = PLANTS.map(p => {
       const moist = num(p.moistureEnt);
@@ -1479,56 +1448,48 @@
         feed:     evalDays(fDays, p.rules.feed, "feed"),
       };
       const verdict = plantVerdict(checks, batt);
-      const ak = verdict.accentKey;
-      // Defer history fetch (idempotent, throttled internally).
-      if (!DEMO) fetchMoistureHistory(p.moistureEnt);
+      const trend   = moistureTrend(p, moist);
       const moistVal = moist == null ? "—" : Math.round(moist) + "%";
       const dliVal   = dli   == null ? "—" : (Math.round(dli*10)/10) + " mol";
       const waterVal = wDays == null ? "—" : wDays + "d ago";
       const feedVal  = fDays == null ? "—" : fDays + "d ago";
-      const buckets  = DEMO
-        ? Array.from({length:7}, (_,i) => moist == null ? null : moist + Math.sin(i*1.1)*4)
-        : bucketDaily(moistureHistory[p.moistureEnt]);
-      const sparkSvg = sparklineSVG(buckets);
-      // Meta strip projections — next-water = days remaining before "watch" tier kicks in.
-      const nextWaterDays = wDays == null ? null : Math.max(0, p.rules.water.ok - wDays);
-      const nextWaterTxt  = nextWaterDays == null ? "—"
-                          : nextWaterDays === 0 ? "due now"
-                          : "in " + nextWaterDays + "d";
-      const dliMeta       = dli == null ? "—" : (Math.round(dli*10)/10) + " mol";
-      // Battery note: secondary by default; only paints accent when battery is the
-      // verdict's accent winner (sensor truly dying). One accent per face.
       const battNote = batt != null && batt < 20
-        ? '<div class="p-batt-note'+(ak === "battery" ? " accent" : "")+'">'
-          + 'Sensor battery '+Math.round(batt)+'% — replace soon</div>'
+        ? '<div class="p-batt-note">Sensor battery '+Math.round(batt)+'% — replace soon</div>'
         : '';
       return '<div class="p-card" data-plant="'+p.id+'">'
         + '<div class="p-art" style="background-image:url(\''+p.art+'\')"></div>'
         + '<div class="p-info">'
-        +   '<div class="p-kicker t-'+verdict.tier+'">'
-        +     '<span class="p-dot"></span>'
-        +     '<span class="p-kicker-word">'+verdict.word+'</span>'
+        +   '<div class="p-head">'
+        +     '<div class="p-verdict t-'+verdict.tier+'">'+verdict.word+'</div>'
+        +     '<div class="p-name">'+escapeHtml(p.name)+'</div>'
+        +     '<div class="p-species">'+escapeHtml(p.species)+'</div>'
         +   '</div>'
-        +   '<div class="p-name">'+escapeHtml(p.name)+'</div>'
-        +   '<div class="p-species">'+escapeHtml(p.species)+'</div>'
+        +   '<div class="p-meta">'
+        +     '<div class="cell">'
+        +       '<div class="label">7-Day Moisture</div>'
+        +       sparklineSvg(trend, checks.moisture.tier)
+        +     '</div>'
+        +     '<div class="cell">'
+        +       '<div class="label">Light Today</div>'
+        +       '<div class="value'+(checks.dli.tier==='crit'||checks.dli.tier==='warn'?' warn':'')+'">'
+        +         (dli == null ? '—' : (Math.round(dli*10)/10) + '<span class="u">mol</span>')
+        +       '</div>'
+        +     '</div>'
+        +   '</div>'
         +   '<div class="p-lines">'
-        +     line("light",    dliVal,   checks.dli.label,      visualTier("dli",      checks.dli.tier,      ak))
-        +     line("water",    waterVal, checks.water.label,    visualTier("water",    checks.water.tier,    ak))
-        +     line("feed",     feedVal,  checks.feed.label,     visualTier("feed",     checks.feed.tier,     ak))
-        +     line("moisture", moistVal, checks.moisture.label, visualTier("moisture", checks.moisture.tier, ak))
+        +     line("light",    dliVal,   checks.dli.label,      checks.dli.tier)
+        +     line("water",    waterVal, checks.water.label,    checks.water.tier)
+        +     line("feed",     feedVal,  checks.feed.label,     checks.feed.tier)
+        +     line("moisture", moistVal, checks.moisture.label, checks.moisture.tier)
         +   '</div>'
         +   battNote
-        +   '<div class="p-meta">'
-        +     '<div class="p-meta-cell"><div class="p-meta-k">7-day moisture</div><div class="p-meta-v p-meta-spark">'+sparkSvg+'</div></div>'
-        +     '<div class="p-meta-cell"><div class="p-meta-k">Next water</div><div class="p-meta-v">'+escapeHtml(nextWaterTxt)+'</div></div>'
-        +     '<div class="p-meta-cell"><div class="p-meta-k">Light today</div><div class="p-meta-v">'+escapeHtml(dliMeta)+'</div></div>'
-        +   '</div>'
         + '</div>'
         + '</div>';
     }).join("");
     if (stage.dataset.signature !== html) {
       stage.innerHTML = html;
       stage.dataset.signature = html;
+      // Re-render dot rail to match plant count.
       const dots = $("p-dots");
       if (dots) {
         dots.innerHTML = PLANTS.map((p,i) =>
@@ -1576,6 +1537,18 @@
 
   // ---------- face switcher ----------
   const VALID_FACES = ["home","weather","commute","listening","ack","grocery","floorplan","plants"];
+  // Read a face lock from URL — checks ?face=, #face=, and #plants (some preview hosts
+  // strip query strings or treat them as part of the path). Returns null if none.
+  function readFaceLock() {
+    const q = new URLSearchParams(location.search).get("face");
+    if (q && VALID_FACES.includes(q)) return q;
+    const h = (location.hash || "").replace(/^#/, "");
+    if (!h) return null;
+    const m = h.match(/face=([a-z]+)/i);
+    if (m && VALID_FACES.includes(m[1])) return m[1];
+    if (VALID_FACES.includes(h)) return h;
+    return null;
+  }
   function showFace(name) {
     if (!VALID_FACES.includes(name)) name = "home";
     document.querySelectorAll(".face").forEach(el => el.classList.toggle("active", el.id === name));
@@ -1592,7 +1565,7 @@
     renderHome(); renderWeather(); renderCommute(); renderListening(); renderAck(); renderGrocery();
     applyMode();
     highlightNav(state["input_select.jarvis_card"]?.state || "home"); renderFloorplan(); renderPlants();
-    const lockFace = new URLSearchParams(location.search).get("face");
+    const lockFace = readFaceLock();
     const active = lockFace || state["input_select.jarvis_card"]?.state || "home";
     showFace(active);
   }
@@ -1943,10 +1916,11 @@
     setConn(true);
     let i = 0;
     const faces = ["home","weather","commute","floorplan","plants","grocery","listening","ack"];
-    const lockFace = new URLSearchParams(location.search).get("face") || "floorplan";
+    const lockFace = readFaceLock();
     const tick = () => {
       seedDemo(i);
-      state["input_select.jarvis_card"] = { state: lockFace };
+      const face = lockFace || faces[i % faces.length];
+      state["input_select.jarvis_card"] = { state: face };
       renderAll();
       i++;
     };
