@@ -500,7 +500,7 @@
   /* Stage = horizontal scroll-snap container with one plant per page. */
   #plants .p-stage {
     position: absolute; left: 0; right: 0;
-    top: clamp(96px,12vh,140px); bottom: clamp(96px,11vh,140px);
+    top: clamp(72px,9vh,108px); bottom: clamp(86px,10vh,116px);
     display: flex; overflow-x: auto; overflow-y: hidden;
     scroll-snap-type: x mandatory; scroll-behavior: smooth;
     scrollbar-width: none;
@@ -509,39 +509,45 @@
   #plants .p-card {
     flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always;
     padding: 0 clamp(40px,6vw,90px);
-    display: grid; grid-template-columns: 1fr 1fr; gap: clamp(28px,4vw,64px);
+    display: grid; grid-template-columns: auto 1fr; gap: clamp(32px,5vw,80px);
     align-items: center;
   }
   #plants .p-art {
-    width: 100%; aspect-ratio: 1 / 1; max-height: clamp(280px,55vh,440px);
+    width: clamp(280px,42vw,540px); aspect-ratio: 1 / 1;
+    max-height: 70vh;
     background-size: contain; background-repeat: no-repeat; background-position: center;
     justify-self: center;
   }
   html[data-theme="dark"] #plants .p-art,
   body.face-listening #plants .p-art,
   body.face-ack       #plants .p-art { filter: invert(1) hue-rotate(180deg); }
-  #plants .p-info { display: flex; flex-direction: column; gap: clamp(12px,1.8vh,20px); min-width: 0; }
-  /* Band A within the card: species eyebrow + verdict pill on a single row. */
-  #plants .p-eyebrow {
-    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+  #plants .p-info { display: flex; flex-direction: column; gap: clamp(6px,1vh,12px); min-width: 0; }
+  /* Kicker = small-caps verdict word + colored dot, sits ABOVE the plant name. */
+  #plants .p-kicker {
+    display: inline-flex; align-items: center; align-self: flex-start; gap: 10px;
+    font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--secondary);
   }
+  #plants .p-kicker .p-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--ink); flex-shrink: 0;
+  }
+  #plants .p-kicker.t-ok       { color: var(--ink); }
+  #plants .p-kicker.t-ok    .p-dot { background: var(--ink); }
+  #plants .p-kicker.t-watch    { color: var(--secondary); }
+  #plants .p-kicker.t-watch .p-dot { background: var(--secondary); }
+  #plants .p-kicker.t-warn     { color: var(--accent); }
+  #plants .p-kicker.t-warn  .p-dot { background: var(--accent); }
+  #plants .p-kicker.t-crit     { color: var(--accent); }
+  #plants .p-kicker.t-crit  .p-dot { background: var(--accent); animation: pulse-dot 2s ease-in-out infinite; }
+  @keyframes pulse-dot { 0%,100% { opacity: 0.35; } 50% { opacity: 1; } }
   #plants .p-name {
-    font-size: clamp(40px,7vh,68px); font-weight: 200; letter-spacing: -0.02em;
-    line-height: 1.0; padding-bottom: clamp(10px,1.4vh,18px);
+    font-size: clamp(36px,6vh,64px); font-weight: 200; letter-spacing: -0.02em;
+    line-height: 1.0; padding-bottom: clamp(6px,1vh,12px);
     border-bottom: 1px solid var(--ink);
   }
   #plants .p-species { font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase;
-    color: var(--secondary); }
-  #plants .p-pill {
-    flex-shrink: 0; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
-    padding: 7px 14px; border: 1px solid var(--secondary); border-radius: 999px;
-    color: var(--secondary); white-space: nowrap; align-self: flex-start;
-  }
-  #plants .p-pill.t-ok    { color: var(--ink); border-color: var(--ink); }
-  #plants .p-pill.t-watch { color: var(--secondary); border-color: var(--secondary); }
-  #plants .p-pill.t-warn  { color: var(--accent); border-color: var(--accent); }
-  #plants .p-pill.t-crit  { color: var(--bg); background: var(--accent); border-color: var(--accent); }
-  #plants .p-lines { display: flex; flex-direction: column; gap: clamp(10px,1.6vh,16px); }
+    color: var(--secondary); margin-top: -4px; }
+  #plants .p-lines { display: flex; flex-direction: column; gap: clamp(6px,1vh,12px); }
   #plants .p-line {
     display: grid; grid-template-columns: 24px 96px 1fr; gap: 14px;
     align-items: center; line-height: 1.25;
@@ -560,13 +566,10 @@
   }
   #plants .p-line.t-crit .p-line-rem,
   #plants .p-line.t-warn .p-line-rem { color: var(--accent); }
-  /* Inline 7-day moisture sparkline lives at the end of the moisture row. */
-  #plants .p-line-spark { display: inline-flex; margin-left: auto; align-self: center; }
-  #plants .p-spark { width: 96px; height: 22px; display: block; }
+  /* 7-day moisture sparkline now lives in the meta strip. */
+  #plants .p-spark { width: 100%; max-width: 140px; height: 22px; display: block; }
   #plants .p-spark-empty { color: var(--secondary); opacity: 0.5; font-size: 18px; }
-  #plants .p-line:has(.p-line-spark) {
-    grid-template-columns: 24px 96px 1fr auto;
-  }
+  #plants .p-meta-spark { padding-top: 4px; }
   #plants .p-batt-note {
     padding-top: clamp(8px,1.2vh,14px); border-top: 1px solid var(--hairline);
     font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
@@ -575,9 +578,9 @@
   #plants .p-batt-note.accent { color: var(--accent); }
   /* Band D meta strip: 3-column key/value above the nav. */
   #plants .p-meta {
-    margin-top: clamp(10px,1.4vh,18px); padding-top: clamp(12px,1.8vh,20px);
+    margin-top: clamp(4px,0.8vh,10px); padding-top: clamp(8px,1.2vh,14px);
     border-top: 1px solid var(--hairline);
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(10px,1.4vw,20px);
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(8px,1.2vw,16px);
   }
   #plants .p-meta-k {
     font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--secondary);
@@ -588,7 +591,7 @@
   }
   /* Indicator dots — a tap-to-jump rail above the global nav-bar. */
   #plants .p-dots {
-    position: absolute; left: 0; right: 0; bottom: clamp(76px,10vh,108px);
+    position: absolute; left: 0; right: 0; bottom: clamp(64px,8vh,92px);
     display: flex; justify-content: center; gap: 14px; z-index: 2;
   }
   #plants .p-dot {
@@ -1344,8 +1347,8 @@
     return { tier: "ok", label: "on track" };
   }
   // Map highest-priority concern to the canonical verdict lexicon (design-system §4):
-  // ON TRACK / WATCH / LATE / CRITICAL. The single worst check also wins the accent
-  // budget — every other line is demoted so only one terracotta element shows at a time.
+  // ON TRACK / WATCH / LATE / CRITICAL — plus SENSOR when low battery is the issue.
+  // The single worst check also wins the accent budget; every other line is demoted.
   const TIER_ORDER = { ok: 0, watch: 1, warn: 2, crit: 3, unknown: -1 };
   const TIER_WORD  = { ok: "ON TRACK", watch: "WATCH", warn: "LATE", crit: "CRITICAL",
                        unknown: "OFFLINE" };
@@ -1359,7 +1362,8 @@
     if (batt != null && batt < 5 && TIER_ORDER[winner] < TIER_ORDER.warn) {
       winner = "warn"; winnerKey = "battery";
     }
-    return { word: TIER_WORD[winner] || "OFFLINE", tier: winner, accentKey: winnerKey };
+    const word = winnerKey === "battery" ? "SENSOR" : (TIER_WORD[winner] || "OFFLINE");
+    return { word, tier: winner, accentKey: winnerKey };
   }
   // Editorial line-art icons matching the rest of the kiosk (hairline strokes).
   // Each returns inline SVG sized 16x16, viewBox 0 0 24 24.
@@ -1486,16 +1490,12 @@
         ? Array.from({length:7}, (_,i) => moist == null ? null : moist + Math.sin(i*1.1)*4)
         : bucketDaily(moistureHistory[p.moistureEnt]);
       const sparkSvg = sparklineSVG(buckets);
-      const sparkExtra = sparkSvg
-        ? '<span class="p-line-spark">'+sparkSvg+'</span>'
-        : "";
       // Meta strip projections — next-water = days remaining before "watch" tier kicks in.
       const nextWaterDays = wDays == null ? null : Math.max(0, p.rules.water.ok - wDays);
       const nextWaterTxt  = nextWaterDays == null ? "—"
                           : nextWaterDays === 0 ? "due now"
                           : "in " + nextWaterDays + "d";
-      const dliMeta       = dli == null ? "—" : (Math.round(dli*10)/10) + " mol today";
-      const mediumLabel   = p.species === "Tank Bromeliad" ? "tank + soil" : "soil only";
+      const dliMeta       = dli == null ? "—" : (Math.round(dli*10)/10) + " mol";
       // Battery note: secondary by default; only paints accent when battery is the
       // verdict's accent winner (sensor truly dying). One accent per face.
       const battNote = batt != null && batt < 20
@@ -1505,22 +1505,23 @@
       return '<div class="p-card" data-plant="'+p.id+'">'
         + '<div class="p-art" style="background-image:url(\''+p.art+'\')"></div>'
         + '<div class="p-info">'
-        +   '<div class="p-eyebrow">'
-        +     '<span class="p-species">'+escapeHtml(p.species)+'</span>'
-        +     '<span class="p-pill t-'+verdict.tier+'">'+verdict.word+'</span>'
+        +   '<div class="p-kicker t-'+verdict.tier+'">'
+        +     '<span class="p-dot"></span>'
+        +     '<span class="p-kicker-word">'+verdict.word+'</span>'
         +   '</div>'
         +   '<div class="p-name">'+escapeHtml(p.name)+'</div>'
+        +   '<div class="p-species">'+escapeHtml(p.species)+'</div>'
         +   '<div class="p-lines">'
         +     line("light",    dliVal,   checks.dli.label,      visualTier("dli",      checks.dli.tier,      ak))
         +     line("water",    waterVal, checks.water.label,    visualTier("water",    checks.water.tier,    ak))
         +     line("feed",     feedVal,  checks.feed.label,     visualTier("feed",     checks.feed.tier,     ak))
-        +     line("moisture", moistVal, checks.moisture.label, visualTier("moisture", checks.moisture.tier, ak), sparkExtra)
+        +     line("moisture", moistVal, checks.moisture.label, visualTier("moisture", checks.moisture.tier, ak))
         +   '</div>'
         +   battNote
         +   '<div class="p-meta">'
+        +     '<div class="p-meta-cell"><div class="p-meta-k">7-day moisture</div><div class="p-meta-v p-meta-spark">'+sparkSvg+'</div></div>'
         +     '<div class="p-meta-cell"><div class="p-meta-k">Next water</div><div class="p-meta-v">'+escapeHtml(nextWaterTxt)+'</div></div>'
         +     '<div class="p-meta-cell"><div class="p-meta-k">Light today</div><div class="p-meta-v">'+escapeHtml(dliMeta)+'</div></div>'
-        +     '<div class="p-meta-cell"><div class="p-meta-k">Medium</div><div class="p-meta-v">'+escapeHtml(mediumLabel)+'</div></div>'
         +   '</div>'
         + '</div>'
         + '</div>';
