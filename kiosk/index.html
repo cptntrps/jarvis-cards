@@ -1420,10 +1420,9 @@
     return bins.map(arr => arr.length ? arr.reduce((a,b) => a+b, 0) / arr.length : null);
   }
   function sparklineSVG(values) {
-    if (!values) return "";
+    // Always emit something so the row's right-side reads as intentional, not broken.
+    if (!values) return '<span class="p-spark-empty">—</span>';
     const valid = values.filter(v => v != null);
-    // Need at least 3 daily buckets to show a trend; otherwise render an em-dash
-    // so the row doesn't look like a render bug.
     if (valid.length < 3) return '<span class="p-spark-empty">—</span>';
     const min = Math.min(...valid), max = Math.max(...valid);
     const range = Math.max(1, max - min);
