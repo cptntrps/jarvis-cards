@@ -28,6 +28,9 @@
   .face {
     position: absolute; inset: 0; width: 100vw; height: 100vh;
     padding: clamp(32px, 4vh, 48px);
+    /* Leave room for fixed mode-toggle (top right) and nav-bar (bottom) */
+    padding-top: clamp(54px, 7vh, 70px);
+    padding-bottom: clamp(72px, 10vh, 90px);
     opacity: 0; pointer-events: none;
     transition: opacity 600ms var(--ease);
   }
@@ -189,8 +192,8 @@
 
   /* ============ WEATHER ============ */
   #weather .grid {
-    position: absolute; inset: clamp(32px,4vh,48px);
-    bottom: clamp(110px,16vh,140px);
+    position: absolute; left: clamp(32px,4vh,48px); right: clamp(32px,4vh,48px);
+    top: clamp(54px, 7vh, 70px); bottom: clamp(110px,16vh,140px);
     display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 360px);
     grid-template-rows: 1fr;
     align-items: center; gap: clamp(16px,3vw,32px);
@@ -246,7 +249,8 @@
 
   /* ============ COMMUTE ============ */
   #commute .grid {
-    position: absolute; inset: clamp(32px,4vh,48px);
+    position: absolute; left: clamp(32px,4vh,48px); right: clamp(32px,4vh,48px);
+    top: clamp(54px, 7vh, 70px); bottom: clamp(80px, 12vh, 100px);
     display: grid; grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr; align-items: center;
   }
@@ -346,7 +350,8 @@
 
   /* ============ FLOORPLAN ============ */
   #floorplan .fp-stage {
-    position: absolute; inset: clamp(32px,4vh,48px);
+    position: absolute; left: clamp(32px,4vh,48px); right: clamp(32px,4vh,48px);
+    top: clamp(54px, 7vh, 70px); bottom: clamp(80px, 12vh, 100px);
     display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
     gap: clamp(20px,3vw,40px); align-items: center;
   }
@@ -619,7 +624,7 @@
   <button class="nav-pill" data-flip="commute">Commute</button>
   <button class="nav-pill" data-flip="grocery">Grocery</button>
   <button class="nav-pill" data-flip="floorplan">Map</button>
-  <button class="nav-pill room-shortcut" data-flip="floorplan" data-select-room="bedroom2" data-here-id="bedroom2">Office</button>
+  <button class="nav-pill" id="this-room-pill" data-flip="floorplan" style="display:none">This room</button>
 </nav>
 <button class="mode-toggle" id="mode-toggle" style="display:none" aria-label="Input mode">
   <span class="mode-dot"></span><span id="mode-label">BOTH</span>
@@ -1187,8 +1192,21 @@
   // ---------- mode + nav active pill ----------
   // URL overrides — read once at boot
   const urlParams = new URLSearchParams(location.search);
-  const HERE = urlParams.get("here");           // room id this device lives in (kept for future "you are here" hint)
+  const HERE = urlParams.get("here");           // room id the device lives in
   const URL_MODE = urlParams.get("mode");        // optional: lock mode to "voice"|"touch"|"both"
+  // Configure the "this room" nav pill from ?here=
+  (() => {
+    const pill = document.getElementById("this-room-pill");
+    if (!pill || !HERE) return;
+    const room = ROOMS.find(r => r.id === HERE);
+    if (!room) return;
+    pill.dataset.selectRoom = HERE;
+    // Use friendly room label (handle duplicate "Bath" by special-casing)
+    const labels = { bedroom1: "Master", bedroom2: "Office", bath1: "Bath", bath2: "Bath",
+                     living: "Living", kitchen: "Kitchen", dining: "Dining", hallway: "Hall" };
+    pill.textContent = labels[HERE] || room.label;
+    pill.style.display = "";
+  })();
   function applyMode() {
     const mode = URL_MODE || state["input_select.jarvis_input_mode"]?.state || "both";
     document.body.dataset.mode = mode;
