@@ -107,6 +107,68 @@
   #grocery .g-hint { position: absolute; right: clamp(32px,4vh,48px); top: clamp(32px,4vh,48px); font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--secondary); opacity: 0; transition: opacity 300ms var(--ease); pointer-events: none; }
   #grocery .g-stage.paused ~ .g-hint, #grocery:hover .g-hint { opacity: 1; }
 
+  /* ============ GLOBAL NAV STRIP ============ */
+  .nav-bar {
+    position: fixed; left: 0; right: 0;
+    bottom: clamp(12px, 2vh, 18px);
+    display: flex; gap: 10px; justify-content: center;
+    z-index: 50; pointer-events: none;
+    transition: opacity 400ms var(--ease), transform 400ms var(--ease);
+  }
+  .nav-bar .nav-pill {
+    pointer-events: auto;
+    background: rgba(242, 239, 233, 0.85); color: var(--secondary);
+    border: 1px solid var(--hairline); border-radius: 999px;
+    padding: 9px 18px; font-size: 11px; letter-spacing: 0.22em;
+    text-transform: uppercase; font-family: inherit; font-weight: 400;
+    cursor: pointer; backdrop-filter: blur(6px);
+    transition: color 180ms var(--ease), border-color 180ms var(--ease),
+                background 180ms var(--ease), transform 120ms var(--ease);
+  }
+  html[data-theme="dark"] .nav-bar .nav-pill,
+  body.face-listening .nav-bar .nav-pill,
+  body.face-ack .nav-bar .nav-pill { background: rgba(10,10,10,0.85); }
+  .nav-bar .nav-pill:active { transform: scale(0.96); }
+  .nav-bar .nav-pill:hover { color: var(--ink); border-color: var(--ink); }
+  .nav-bar .nav-pill.active { color: var(--ink); border-color: var(--ink); background: var(--bg); }
+
+  /* Hide nav on transient faces (ack / listening) so they stay full-bleed */
+  body.face-listening .nav-bar,
+  body.face-ack       .nav-bar { opacity: 0; pointer-events: none; transform: translateY(8px); }
+
+  /* MODE: voice = ambient only. All face touches inert.
+     Only the mode-toggle button remains tappable so you can escape voice mode. */
+  body[data-mode="voice"] .nav-bar { opacity: 0; pointer-events: none; transform: translateY(8px); }
+  body[data-mode="voice"] .face,
+  body[data-mode="voice"] .tappable,
+  body[data-mode="voice"] #grocery .g-row,
+  body[data-mode="voice"] #floorplan .fp-room { pointer-events: none; cursor: default; }
+  body[data-mode="voice"] .meta .cell.tappable .value,
+  body[data-mode="voice"] #commute .hero.tappable .eta-num { border-bottom: none; }
+  /* Mode toggle ALWAYS interactive — it is the escape hatch */
+  .mode-toggle { pointer-events: auto !important; }
+
+  /* ============ MODE TOGGLE ============ */
+  .mode-toggle {
+    position: fixed; top: clamp(10px, 1.6vh, 16px); right: clamp(10px, 1.6vw, 16px);
+    z-index: 60; pointer-events: auto;
+    background: transparent; border: 1px solid var(--hairline); border-radius: 999px;
+    padding: 6px 12px 6px 10px;
+    display: flex; align-items: center; gap: 8px;
+    color: var(--secondary); font-family: inherit; font-size: 10px;
+    letter-spacing: 0.22em; text-transform: uppercase; font-weight: 500;
+    cursor: pointer;
+    transition: color 180ms var(--ease), border-color 180ms var(--ease);
+  }
+  .mode-toggle:hover { color: var(--ink); border-color: var(--ink); }
+  .mode-toggle .mode-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+  }
+  body[data-mode="voice"] .mode-toggle .mode-dot { background: var(--secondary); }
+  body[data-mode="touch"] .mode-toggle .mode-dot { background: var(--ink); }
+
+
   /* ============ HOME (at-rest) ============ */
   #home .clock-hero {
     position: absolute; left:50%; top:50%; transform: translate(-50%,-50%);
@@ -557,6 +619,18 @@
   </div>
 </section>
 
+<!-- ============ GLOBAL NAV + MODE TOGGLE ============ -->
+<nav class="nav-bar" id="nav-bar">
+  <button class="nav-pill" data-flip="home">Home</button>
+  <button class="nav-pill" data-flip="weather">Weather</button>
+  <button class="nav-pill" data-flip="commute">Commute</button>
+  <button class="nav-pill" data-flip="grocery">Grocery</button>
+  <button class="nav-pill" data-flip="floorplan">Map</button>
+</nav>
+<button class="mode-toggle" id="mode-toggle" aria-label="Input mode">
+  <span class="mode-dot"></span><span id="mode-label">BOTH</span>
+</button>
+
 <script>
 (() => {
   // DEMO=true seeds fixtures + auto-rotates faces every 6s. Set false for live HA.
@@ -566,6 +640,7 @@
   const HA_TOKEN = (typeof localStorage!=="undefined" && localStorage.getItem("ha_token")) || "__HA_TOKEN__";
   const ENTITIES = [
     "input_select.jarvis_card",
+    "input_select.jarvis_input_mode",
     "weather.forecast_home",
     "sensor.path_grove_st_to_wtc",
     "sensor.path_grove_st_to_33rd",
@@ -998,7 +1073,9 @@
   }
 
   function renderAll() {
-    renderHome(); renderWeather(); renderCommute(); renderListening(); renderAck(); renderGrocery(); renderFloorplan();
+    renderHome(); renderWeather(); renderCommute(); renderListening(); renderAck(); renderGrocery();
+    applyMode();
+    highlightNav(state["input_select.jarvis_card"]?.state || "home"); renderFloorplan();
     const lockFace = new URLSearchParams(location.search).get("face");
     const active = lockFace || state["input_select.jarvis_card"]?.state || "home";
     showFace(active);
@@ -1075,12 +1152,15 @@
     }
   }
   document.addEventListener("click", (e) => {
+    // In voice mode, only the mode toggle handles its own click; everything else inert.
+    const mode = document.body.dataset.mode || "both";
+    if (mode === "voice" && !e.target.closest("#mode-toggle")) return;
     const flip = e.target.closest("[data-flip]");
     if (flip) { flipCard(flip.dataset.flip); return; }
     const face = e.target.closest(".face.active");
     if (!face) return;
     const dismiss = face.dataset.dismiss;
-    if (dismiss && !e.target.closest(".tappable, .g-row")) {
+    if (dismiss && !e.target.closest(".tappable, .g-row, .nav-bar, .mode-toggle")) {
       flipCard(dismiss);
     }
   });
@@ -1097,6 +1177,40 @@
         paintCommuteHero();
       });
     }
+  })();
+
+  // ---------- mode + nav active pill ----------
+  function applyMode() {
+    const mode = state["input_select.jarvis_input_mode"]?.state || "both";
+    document.body.dataset.mode = mode;
+    const lbl = document.getElementById("mode-label");
+    if (lbl) lbl.textContent = mode.toUpperCase();
+  }
+  function highlightNav(activeFace) {
+    document.querySelectorAll(".nav-bar .nav-pill").forEach(p => {
+      p.classList.toggle("active", p.dataset.flip === activeFace);
+    });
+  }
+  // Cycle mode on toggle button: voice -> touch -> both -> voice
+  (() => {
+    const btn = document.getElementById("mode-toggle");
+    if (!btn) return;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const cur = state["input_select.jarvis_input_mode"]?.state || "both";
+      const next = cur === "voice" ? "touch" : cur === "touch" ? "both" : "voice";
+      // Optimistic local update so it feels instant
+      state["input_select.jarvis_input_mode"] = { state: next };
+      applyMode();
+      // Ask HA to persist if connected
+      if (ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({
+          id: msgId++, type: "call_service",
+          domain: "input_select", service: "select_option",
+          service_data: { entity_id: "input_select.jarvis_input_mode", option: next }
+        }));
+      }
+    });
   })();
 
   // ---------- grocery swipe-to-remove ----------
