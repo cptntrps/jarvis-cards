@@ -626,6 +626,7 @@
   <button class="nav-pill" data-flip="commute">Commute</button>
   <button class="nav-pill" data-flip="grocery">Grocery</button>
   <button class="nav-pill" data-flip="floorplan">Map</button>
+  <button class="nav-pill room-shortcut" data-flip="floorplan" data-select-room="bedroom2" data-here-id="bedroom2">Office</button>
 </nav>
 <button class="mode-toggle" id="mode-toggle" aria-label="Input mode">
   <span class="mode-dot"></span><span id="mode-label">BOTH</span>
@@ -1156,7 +1157,13 @@
     const mode = document.body.dataset.mode || "both";
     if (mode === "voice" && !e.target.closest("#mode-toggle")) return;
     const flip = e.target.closest("[data-flip]");
-    if (flip) { flipCard(flip.dataset.flip); return; }
+    if (flip) {
+      const room = flip.dataset.selectRoom;
+      if (room) { fpSelected = room; }
+      flipCard(flip.dataset.flip);
+      if (room) renderFloorplan();
+      return;
+    }
     const face = e.target.closest(".face.active");
     if (!face) return;
     const dismiss = face.dataset.dismiss;
@@ -1180,8 +1187,16 @@
   })();
 
   // ---------- mode + nav active pill ----------
+  // URL overrides — read once at boot
+  const urlParams = new URLSearchParams(location.search);
+  const HERE = urlParams.get("here");           // room id this device LIVES in
+  const URL_MODE = urlParams.get("mode");        // optional: lock mode to "voice"|"touch"|"both"
+  // Hide room-shortcut pills that point at the device's own room
+  if (HERE) {
+    document.querySelectorAll(`[data-here-id="${HERE}"]`).forEach(el => el.style.display = "none");
+  }
   function applyMode() {
-    const mode = state["input_select.jarvis_input_mode"]?.state || "both";
+    const mode = URL_MODE || state["input_select.jarvis_input_mode"]?.state || "both";
     document.body.dataset.mode = mode;
     const lbl = document.getElementById("mode-label");
     if (lbl) lbl.textContent = mode.toUpperCase();
