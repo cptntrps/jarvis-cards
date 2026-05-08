@@ -642,11 +642,20 @@
     "sensor.travel_time_30_irving",
     "input_text.jarvis_last_speech",
     "sensor.groceries_low",
-    // Room lights — match ROOM_LIGHTS above
-    "light.bedroom", "light.office",
-    "light.kitchen", "light.social_area",
-    "light.living_room_lights", "light.hallway",
-    "light.master_bathroom", "light.guest_bathroom_2",
+    // Room lights — flattened from ROOM_LIGHTS map above
+    "light.bedroom", "light.bedroom_floor", "light.bedroom_bedside_lamp",
+    "light.office", "light.office_lights", "light.office_govee_lamp", "light.office_light_stand",
+    "light.kitchen",
+    "light.kitchen_front_left", "light.kitchen_front_center", "light.kitchen_front_right",
+    "light.kitchen_back_left",  "light.kitchen_back_center",  "light.kitchen_back_right",
+    "light.social_area",
+    "light.living_room_lights", "light.living_room_lamp", "light.living_room_chair_light",
+    "light.living_room_luminaria_top", "light.living_room_luminaria_middle",
+    "light.living_room_luminaria_bottom",
+    "light.hue_play_1", "light.hue_play_2", "light.hue_play_gradient_lightstrip_1",
+    "light.hallway", "light.hallway_near_door", "light.hallway_near_office", "light.hallway_near_tv",
+    "light.master_bathroom", "light.main_bathroom_downlight",
+    "light.guest_bathroom_2", "light.guest_bathroom_downlight",
   ];
   const state = {};
 
@@ -911,18 +920,45 @@
     svg.dataset.built = "1";
   }
 
-  // Map our room IDs to actual HA light entities. Override for any apartment.
+  // Map our room IDs to actual HA light entities. The FIRST entry is the group
+  // used for service calls (turn_on / turn_off / brightness). All entries are
+  // observed for state — the room shows as lit if ANY of its entities is on.
   const ROOM_LIGHTS = {
-    bedroom1: "light.bedroom",
-    bedroom2: "light.office",
-    kitchen:  "light.kitchen",
-    dining:   "light.social_area",
-    living:   "light.living_room_lights",
-    hallway:  "light.hallway",
-    bath1:    "light.master_bathroom",
-    bath2:    "light.guest_bathroom_2",
+    bedroom1: ["light.bedroom", "light.bedroom_floor", "light.bedroom_bedside_lamp"],
+    bedroom2: ["light.office", "light.office_lights", "light.office_govee_lamp", "light.office_light_stand"],
+    kitchen:  ["light.kitchen",
+               "light.kitchen_front_left", "light.kitchen_front_center", "light.kitchen_front_right",
+               "light.kitchen_back_left",  "light.kitchen_back_center",  "light.kitchen_back_right"],
+    dining:   ["light.social_area"],
+    living:   ["light.living_room_lights", "light.living_room_lamp", "light.living_room_chair_light",
+               "light.living_room_luminaria_top", "light.living_room_luminaria_middle",
+               "light.living_room_luminaria_bottom", "light.hue_play_1", "light.hue_play_2",
+               "light.hue_play_gradient_lightstrip_1"],
+    hallway:  ["light.hallway", "light.hallway_near_door", "light.hallway_near_office", "light.hallway_near_tv"],
+    bath1:    ["light.master_bathroom", "light.main_bathroom_downlight"],
+    bath2:    ["light.guest_bathroom_2", "light.guest_bathroom_downlight"],
   };
-  function lightEntity(roomId) { return ROOM_LIGHTS[roomId] || ("light." + roomId); }
+  // The group entity (used for service calls)
+  function lightEntity(roomId) {
+    const arr = ROOM_LIGHTS[roomId];
+    return Array.isArray(arr) ? arr[0] : (arr || ("light." + roomId));
+  }
+  // Aggregate state across all entities in a room: lit if any on, brightness = max of those that are on
+  function lightAgg(roomId) {
+    const arr = ROOM_LIGHTS[roomId];
+    if (!arr) return null;
+    const list = Array.isArray(arr) ? arr : [arr];
+    let on = false, bri = null;
+    for (const e of list) {
+      const st = state[e];
+      if (st && st.state === "on") {
+        on = true;
+        const b = st.attributes && st.attributes.brightness;
+        if (typeof b === "number" && (bri === null || b > bri)) bri = b;
+      }
+    }
+    return { state: on ? "on" : "off", attributes: bri != null ? { brightness: bri } : {} };
+  }
   const ROOMS_WITH_LIGHTS = new Set(Object.keys(ROOM_LIGHTS));
   if (typeof window.fpUserTouched === "undefined") window.fpUserTouched = new Set();
 
@@ -951,7 +987,7 @@
     buildFloorplan();
     const svg = $("fp-svg");
     ROOMS.forEach(r => {
-      const lightOn = state[lightEntity(r.id)]?.state === "on";
+      const lightOn = lightAgg(r.id)?.state === "on";
       const motion  = state["binary_sensor.motion_"+r.id]?.state === "on";
       const poly = svg.querySelector('.fp-room[data-room="'+r.id+'"]');
       const dot  = svg.querySelector('[data-room-motion="'+r.id+'"]');
@@ -987,7 +1023,7 @@
       lightHost.innerHTML = '<div class="row"><span class="k">Light</span><span class="fp-empty">No fixtures</span></div>';
       return;
     }
-    const lightSt = state[lightEntity(sel.id)];
+    const lightSt = lightAgg(sel.id);
     const on = lightSt?.state === "on";
     const bri = on ? (lightSt?.attributes?.brightness ?? 200) : 0;
     const pct = Math.round(bri / 255 * 100);
@@ -1304,7 +1340,7 @@
     const lit = roomCycle[faceIdx % roomCycle.length];
     const motion = motionCycle[faceIdx % motionCycle.length];
     const setLight = (id, on, brightness=180) => {
-      state[lightEntity(id)] = { state: on ? "on" : "off", attributes: on ? { brightness } : {} };
+      lightAgg(id) = { state: on ? "on" : "off", attributes: on ? { brightness } : {} };
     };
     ["bedroom2","kitchen","dining","bath1","living","hallway","bedroom1","bath2","closet_gui","closet_ra"].forEach(r => {
       if (fpUserTouched.has(r)) return;
